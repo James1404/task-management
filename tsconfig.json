@@ -1,0 +1,14 @@
+{
+    "extends": "@tsconfig/strictest/tsconfig.json",
+    "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "./",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "target": "ES2023",
+        "strict": true,
+        "esModuleInterop": true
+    },
+    "include": ["**/*.ts"],
+    "exclude": ["dist"]
+}
