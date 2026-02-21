@@ -2,7 +2,7 @@ import bodyParser from "body-parser";
 import express, { Request } from "express";
 import { randomBytes, scryptSync } from "node:crypto";
 import prisma from "../client";
-import { encodeToken } from "../auth";
+import { encode } from "../jwt";
 
 const router = express.Router();
 const jsonParser = bodyParser.json();
@@ -70,9 +70,14 @@ router.post("/login", jsonParser, async (req: LoginReq, res) => {
         return;
     }
 
-    let token = encodeToken(
+    let token = encode(
         { alg: "HS256", typ: "JWT" },
-        { sub: user.id, name: user.email, iat: Date.now() },
+        {
+            sub: user.id,
+            name: user.email,
+            iat: Date.now() / 1000,
+            exp: Date.now() / 1000 + 86400,
+        },
     );
 
     res.send(`Success: ${token}`);

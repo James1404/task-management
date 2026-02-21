@@ -1,6 +1,6 @@
 import bodyParser from "body-parser";
 import express from "express";
-import { auth } from "../auth";
+import { auth } from "../jwt";
 
 const router = express.Router();
 const jsonParser = bodyParser.json();
@@ -8,7 +8,8 @@ const jsonParser = bodyParser.json();
 router.use(auth);
 
 router.get("/", (req, res) => {
-    res.send("Hello there from tasks");
+    let user_id = res.locals["user"] as string;
+    res.send(`Hello there from tasks: user = ${user_id}`);
 });
 
 export default router;
