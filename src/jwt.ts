@@ -12,7 +12,6 @@ type Header = {
 
 type Payload = {
     sub: string;
-    name: string;
     iat: number;
     exp: number;
 };
@@ -75,7 +74,11 @@ export const auth: RequestHandler = async (req, res, next) => {
         const token = decode(req.headers.authorization);
 
         if (token == null) {
-            throw new Error("Invalid or expired token");
+            throw new Error("Invalid token");
+        }
+
+        if (token.payload.exp < Date.now() / 1000) {
+            throw new Error("Expired token");
         }
 
         const user = await prisma.user.findUnique({

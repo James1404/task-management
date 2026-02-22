@@ -32,14 +32,28 @@ model User {
 
     projects Project[]
 
+    createdAt     DateTime       @default(now()) @db.Timestamptz(6)
+    updatedAt     DateTime       @updatedAt @db.Timestamptz(6)
+    refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+    id String @id @default(uuid())
+
+    token_hash String @unique
+
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId String
+
     createdAt DateTime @default(now()) @db.Timestamptz(6)
-    updatedAt DateTime @updatedAt @db.Timestamptz(6)
+    expiresAt DateTime @db.Timestamptz(6)
 }
 
 model Project {
     id Int @id @default(autoincrement())
 
-    name String
+    name        String
+    description String
 
     owner   User   @relation(fields: [ownerId], references: [id])
     ownerId String
@@ -59,6 +73,6 @@ model Task {
     description String?
     status      Status  @default(TODO)
 
-    project   Project @relation(fields: [projectId], references: [id])
+    project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
     projectId Int
 }
