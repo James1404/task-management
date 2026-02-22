@@ -44,27 +44,21 @@ export function encode(header: Header, payload: Payload): string {
 
 export function decode(token: string): JWT | null {
     try {
-        let asd = token.split(".");
-        if (asd.length != 3) {
-            return null;
-        }
+        let [headerbuf, payloadbuf, signaturebuf] = token.split(".");
 
-        const signature = genSignature(asd[0], asd[1]);
+        const signature = genSignature(headerbuf, payloadbuf);
 
         const header = JSON.parse(
-            Buffer.from(asd[0], "base64url").toString("utf-8"),
+            Buffer.from(headerbuf, "base64url").toString("utf-8"),
         );
 
         const payload = JSON.parse(
-            Buffer.from(asd[1], "base64url").toString("utf-8"),
+            Buffer.from(payloadbuf, "base64url").toString("utf-8"),
         );
 
-        if (signature != asd[2]) {
+        if (signature != signaturebuf) {
             return null;
         }
-
-        console.log(header);
-        console.log(payload);
 
         return { header, payload };
     } catch {
@@ -73,28 +67,30 @@ export function decode(token: string): JWT | null {
 }
 
 export const auth: RequestHandler = async (req, res, next) => {
-    if (req.headers.authorization == null) {
-        res.send("No JWT token");
-        return;
+    try {
+        if (req.headers.authorization == null) {
+            throw new Error("Authentication required");
+        }
+
+        const token = decode(req.headers.authorization);
+
+        if (token == null) {
+            throw new Error("Invalid or expired token");
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: token.payload.sub },
+        });
+
+        if (user == null) {
+            throw new Error("User does not exist");
+        }
+
+        res.locals["user"] = user.id;
+
+        next();
+    } catch (err) {
+        res.status(401);
+        res.json({ error: (err as Error).message });
     }
-
-    const token = decode(req.headers.authorization);
-
-    if (token == null) {
-        res.send("Invalid JWT token");
-        return;
-    }
-
-    const user = await prisma.user.findUnique({
-        where: { id: token.payload.sub },
-    });
-
-    if (user == null) {
-        res.send("User does not exist");
-        return;
-    }
-
-    res.locals["user"] = user.id;
-
-    next();
 };

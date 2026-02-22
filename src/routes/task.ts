@@ -6,8 +6,9 @@ const router = express.Router();
 const jsonParser = bodyParser.json();
 
 router.use(auth);
+router.use(jsonParser);
 
-router.get("/", (req, res) => {
+router.get("/", (_, res) => {
     let user_id = res.locals["user"] as string;
     res.send(`Hello there from tasks: user = ${user_id}`);
 });

@@ -1,11 +1,14 @@
 import bodyParser from "body-parser";
-import express, { Request } from "express";
+import express, { Request, RequestHandler } from "express";
 import { randomBytes, scryptSync } from "node:crypto";
 import prisma from "../client";
 import { encode } from "../jwt";
 
+import { validate, z } from "../middleware";
+
 const router = express.Router();
 const jsonParser = bodyParser.json();
+router.use(jsonParser);
 
 function generateSalt(): string {
     return randomBytes(128).toString("base64");
@@ -17,70 +20,90 @@ function hashPassword(password: string, salt: string): string {
     return derivedKey.toString("hex");
 }
 
-interface RegisterReq extends Request {
-    body: {
-        email: string;
-        password: string;
-    };
-}
+const registerSchema = z.object({
+    email: z.string(),
+    password: z.string(),
 
-router.post("/register", jsonParser, async (req: RegisterReq, res) => {
-    let salt = generateSalt();
-    let hash = hashPassword(req.body.password, salt);
-
-    if (await prisma.user.findUnique({ where: { email: req.body.email } })) {
-        res.send(`Account already exists with email: ${req.body.email}`);
-        return;
-    }
-
-    await prisma.user.create({
-        data: {
-            email: req.body.email,
-            password: hash,
-            salt: salt,
-        },
-    });
-
-    res.send(
-        `${req.body["password"]} once hashed is: ${hash}, with salt: ${salt}`,
-    );
+    first_name: z.string(),
+    last_name: z.string(),
 });
 
-interface LoginReq extends Request {
-    body: {
-        email: string;
-        password: string;
-    };
-}
+router.post("/register", validate(registerSchema), async (req, res) => {
+    try {
+        let salt = generateSalt();
+        let hash = hashPassword(req.body.password, salt);
 
-router.post("/login", jsonParser, async (req: LoginReq, res) => {
-    const user = await prisma.user.findUnique({
-        where: { email: req.body.email },
-    });
+        if (
+            await prisma.user.findUnique({ where: { email: req.body.email } })
+        ) {
+            throw new Error(`Account with email already exists`);
+        }
 
-    if (user == null) {
-        res.send("Account does not exist");
-        return;
+        const user = await prisma.user.create({
+            data: {
+                email: req.body.email,
+                password: hash,
+                salt: salt,
+                first_name: req.body.first_name,
+                last_name: req.body.last_name,
+            },
+        });
+
+        let token = encode(
+            { alg: "HS256", typ: "JWT" },
+            {
+                sub: user.id,
+                name: user.email,
+                iat: Date.now() / 1000,
+                exp: Date.now() / 1000 + 86400,
+            },
+        );
+
+        res.status(201);
+        res.json({ token });
+    } catch (err) {
+        res.status(403);
+        res.json({ error: (err as Error).message });
     }
+});
 
-    let hash = hashPassword(req.body.password, user.salt);
+const loginSchema = z.object({
+    email: z.string(),
+    password: z.string(),
+});
 
-    if (hash != user.password) {
-        res.send("Invalid credentials");
-        return;
+router.post("/login", validate(loginSchema), async (req, res) => {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { email: req.body.email },
+        });
+
+        if (user == null) {
+            throw new Error("Account does not exist");
+        }
+
+        let hash = hashPassword(req.body.password, user.salt);
+
+        if (hash != user.password) {
+            throw new Error("Invalid credentials");
+        }
+
+        let token = encode(
+            { alg: "HS256", typ: "JWT" },
+            {
+                sub: user.id,
+                name: user.email,
+                iat: Date.now() / 1000,
+                exp: Date.now() / 1000 + 86400,
+            },
+        );
+
+        res.status(200);
+        res.json({ token });
+    } catch (err) {
+        res.status(401);
+        res.json({ error: (err as Error).message });
     }
-
-    let token = encode(
-        { alg: "HS256", typ: "JWT" },
-        {
-            sub: user.id,
-            name: user.email,
-            iat: Date.now() / 1000,
-            exp: Date.now() / 1000 + 86400,
-        },
-    );
-
-    res.send(`Success: ${token}`);
 });
 
 export default router;
