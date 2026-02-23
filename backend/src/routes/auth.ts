@@ -38,7 +38,7 @@ router.post("/register", validate(registerSchema), async (req, res) => {
         if (
             await prisma.user.findUnique({ where: { email: req.body.email } })
         ) {
-            throw new Error(`Account with email already exists`);
+            throw new RouteError(`Account with email already exists`);
         }
 
         const user = await prisma.user.create({
@@ -58,9 +58,9 @@ router.post("/register", validate(registerSchema), async (req, res) => {
             refresh,
             access,
         });
-    } catch (err) {
-        res.status(403);
-        res.json({ error: (err as Error).message });
+    } catch (e) {
+        const err = e as RouteError;
+        res.status(err.status_code).json({ error: err.message });
     }
 });
 
@@ -76,13 +76,13 @@ router.post("/login", validate(loginSchema), async (req, res) => {
         });
 
         if (user == null) {
-            throw new Error("Account does not exist");
+            throw new RouteError("Account does not exist");
         }
 
         let hash = hashPassword(req.body.password, user.salt);
 
         if (hash != user.password) {
-            throw new Error("Invalid credentials");
+            throw new RouteError("Invalid credentials");
         }
 
         let refresh = await issueRefreshToken(user.id, prisma);
@@ -92,14 +92,14 @@ router.post("/login", validate(loginSchema), async (req, res) => {
             refresh,
             access,
         });
-    } catch (err) {
-        res.status(401);
-        res.json({ error: (err as Error).message });
+    } catch (e) {
+        const err = e as RouteError;
+        res.status(err.status_code).json({ error: err.message });
     }
 });
 
 router.post("/logout", async (req, res) => {
-    let user_id = res.locals["user"] as string;
+    // let user_id = res.locals["user"] as string;
 
     res.status(502).end();
 });
@@ -140,25 +140,25 @@ async function issueRefreshToken(
 }
 
 const refreshSchema = z.object({
-    token: z.string(),
+    refresh: z.string(),
 });
 
 router.post("/refresh", validate(refreshSchema), async (req, res) => {
     try {
-        const hashedToken = hashRefreshToken(req.body.token);
+        const hashedToken = hashRefreshToken(req.body.refresh);
         const dbToken = await prisma.refreshToken.findUnique({
             where: { token_hash: hashedToken },
         });
 
         if (dbToken == null) {
-            throw new Error("Invalid refresh token");
+            throw new RouteError("Invalid refresh token");
         }
 
         if (dbToken.expiresAt < new Date()) {
             await prisma.refreshToken.delete({
                 where: { id: dbToken.id },
             });
-            throw new Error("Expired refresh token");
+            throw new RouteError("Expired refresh token");
         }
 
         let newToken = await prisma.$transaction(async tx => {
@@ -173,8 +173,9 @@ router.post("/refresh", validate(refreshSchema), async (req, res) => {
             refresh: newToken,
             access: createAccessToken(dbToken.userId),
         });
-    } catch (err) {
-        res.status(401).json({ error: "Invalid or expired refresh token" });
+    } catch (e) {
+        const err = e as RouteError;
+        res.status(err.status_code).json({ error: err.message });
     }
 });
 

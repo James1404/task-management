@@ -15,6 +15,7 @@ router.get("/", async (_, res) => {
 
     const projects = await prisma.project.findMany({
         where: { ownerId: user_id },
+        include: { tasks: true },
     });
 
     res.status(200).json(projects);
@@ -49,15 +50,17 @@ router.get("/:projectId", async (req, res) => {
 
         const project = await prisma.project.findUnique({
             where: { id: Number(req.params.projectId), ownerId: user_id },
+            include: { tasks: true },
         });
 
         if (project == null) {
-            throw new Error("Project does not exist with ID");
+            throw new RouteError("Project does not exist with ID");
         }
 
         res.status(200).json(JSON.stringify(project));
-    } catch (err) {
-        res.status(400).json({ error: (err as Error).message });
+    } catch (e) {
+        const err = e as RouteError;
+        res.status(err.status_code).json({ error: err.message });
     }
 });
 
@@ -70,12 +73,36 @@ router.post("/:projectId", async (req, res) => {
         });
 
         if (project == null) {
-            throw new Error("Project does not exist with ID");
+            throw new RouteError("Project does not exist with ID");
         }
 
         res.status(200).json(project);
-    } catch (err) {
-        res.status(400).json({ error: (err as Error).message });
+    } catch (e) {
+        const err = e as RouteError;
+        res.status(err.status_code).json({ error: err.message });
+    }
+});
+
+router.delete("/:projectId", async (req, res) => {
+    try {
+        let user_id = res.locals["user"] as string;
+
+        const project = await prisma.project.findUnique({
+            where: { id: Number(req.params.projectId), ownerId: user_id },
+        });
+
+        if (project == null) {
+            throw new RouteError("Project does not exist with ID");
+        }
+
+        await prisma.project.delete({
+            where: { id: Number(req.params.projectId), ownerId: user_id },
+        });
+
+        res.status(204).end();
+    } catch (e) {
+        const err = e as RouteError;
+        res.status(err.status_code).json({ error: err.message });
     }
 });
 

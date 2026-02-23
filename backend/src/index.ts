@@ -10,6 +10,7 @@ import authentication from "./routes/auth";
 import tasks from "./routes/tasks";
 import user from "./routes/user";
 import projects from "./routes/projects";
+import view from "./routes/view";
 
 app.use(morgan("common"));
 
@@ -19,6 +20,7 @@ app.use("/auth", authentication);
 app.use("/tasks", tasks);
 app.use("/user", user);
 app.use("/projects", projects);
+app.use("/view", view);
 
 app.get("/", (_, res) => {
     res.send("Hello, World!");
