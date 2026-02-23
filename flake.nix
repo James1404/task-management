@@ -18,6 +18,8 @@
             nodejs # If astro dev is running slow run 'npm cache clean --force'
             prisma
             prisma-engines
+
+            deno
           ];
           shellHook = ''
             export PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig";

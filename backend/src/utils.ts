@@ -1,4 +1,4 @@
-class RouteError extends Error {
+export class RouteError extends Error {
     status_code: number;
 
     constructor(

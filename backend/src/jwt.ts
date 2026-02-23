@@ -1,6 +1,7 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { createHmac } from "node:crypto";
-import prisma from "./client";
+import prisma from "./client.ts";
+import { Buffer } from "node:buffer";
 
 type Alg = "HS256" | "RS256";
 type Typ = "JWT";
@@ -21,7 +22,7 @@ type JWT = {
     payload: Payload;
 };
 
-const secret = process.env["JWT_SECRET"] ?? "unknown";
+const secret = Deno.env.get("JWT_SECRET") ?? "unknown";
 
 function genSignature(headerbuf: string, payloadbuf: string): string {
     return createHmac("sha256", secret)
@@ -43,7 +44,11 @@ export function encode(header: Header, payload: Payload): string {
 
 export function decode(token: string): JWT | null {
     try {
-        let [headerbuf, payloadbuf, signaturebuf] = token.split(".");
+        const [headerbuf, payloadbuf, signaturebuf] = token.split(".");
+
+        if (headerbuf == null || payloadbuf == null || signaturebuf == null) {
+            return null;
+        }
 
         const signature = genSignature(headerbuf, payloadbuf);
 

@@ -1,0 +1,26 @@
+{
+    "nodeModulesDir": "auto",
+    "tasks": {
+        "dev": "deno run -A --watch src/index.ts",
+        "db:generate": "deno run -A --env=.env npm:prisma generate",
+        "db:push": "deno run -A --env=.env npm:prisma db push",
+        "db:migrate": "deno run -A --env=.env npm:prisma migrate dev",
+        "db:studio": "deno run -A --env=.env npm:prisma studio"
+    },
+    "imports": {
+        "@prisma/adapter-pg": "npm:@prisma/adapter-pg@^7.4.1",
+        "@prisma/client": "npm:@prisma/client@^7.4.1",
+        "@std/assert": "jsr:@std/assert@1",
+        "@std/dotenv": "jsr:@std/dotenv@^0.225.6",
+        "@types/body-parser": "npm:@types/body-parser@^1.19.6",
+        "@types/express": "npm:@types/express@^5.0.6",
+        "@types/morgan": "npm:@types/morgan@^1.9.10",
+        "@types/pg": "npm:@types/pg@^8.16.0",
+        "body-parser": "npm:body-parser@^2.2.2",
+        "express": "npm:express@^5.2.1",
+        "morgan": "npm:morgan@^1.10.1",
+        "pg": "npm:pg@^8.18.0",
+        "uuid": "npm:uuid@^13.0.0",
+        "zod": "npm:zod@^4.3.6"
+    }
+}

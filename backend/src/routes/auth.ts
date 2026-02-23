@@ -1,13 +1,14 @@
 import bodyParser from "body-parser";
 import express from "express";
 import { createHash, randomBytes, scryptSync } from "node:crypto";
-import prisma from "../client";
-import { encode } from "../jwt";
+import prisma from "../client.ts";
+import { encode } from "../jwt.ts";
 
 import { v4 as uuidv4 } from "uuid";
 
-import { validate, z } from "../middleware";
-import { Prisma } from "../../generated/prisma/client";
+import { validate, z } from "../middleware.ts";
+import { Prisma } from "../../generated/prisma/client.ts";
+import { RouteError } from "../utils.ts";
 
 const router = express.Router();
 const jsonParser = bodyParser.json();
@@ -18,7 +19,7 @@ function generateSalt(): string {
 }
 
 function hashPassword(password: string, salt: string): string {
-    let derivedKey = scryptSync(password, salt, 64);
+    const derivedKey = scryptSync(password, salt, 64);
     return derivedKey.toString("hex");
 }
 
@@ -32,8 +33,8 @@ const registerSchema = z.object({
 
 router.post("/register", validate(registerSchema), async (req, res) => {
     try {
-        let salt = generateSalt();
-        let hash = hashPassword(req.body.password, salt);
+        const salt = generateSalt();
+        const hash = hashPassword(req.body.password, salt);
 
         if (
             await prisma.user.findUnique({ where: { email: req.body.email } })
@@ -51,8 +52,8 @@ router.post("/register", validate(registerSchema), async (req, res) => {
             },
         });
 
-        let refresh = await issueRefreshToken(user.id, prisma);
-        let access = createAccessToken(user.id);
+        const refresh = await issueRefreshToken(user.id, prisma);
+        const access = createAccessToken(user.id);
 
         res.status(200).json({
             refresh,
@@ -79,14 +80,14 @@ router.post("/login", validate(loginSchema), async (req, res) => {
             throw new RouteError("Account does not exist");
         }
 
-        let hash = hashPassword(req.body.password, user.salt);
+        const hash = hashPassword(req.body.password, user.salt);
 
         if (hash != user.password) {
             throw new RouteError("Invalid credentials");
         }
 
-        let refresh = await issueRefreshToken(user.id, prisma);
-        let access = createAccessToken(user.id);
+        const refresh = await issueRefreshToken(user.id, prisma);
+        const access = createAccessToken(user.id);
 
         res.status(200).json({
             refresh,
@@ -98,7 +99,7 @@ router.post("/login", validate(loginSchema), async (req, res) => {
     }
 });
 
-router.post("/logout", async (req, res) => {
+router.post("/logout", (_, res) => {
     // let user_id = res.locals["user"] as string;
 
     res.status(502).end();
@@ -161,7 +162,7 @@ router.post("/refresh", validate(refreshSchema), async (req, res) => {
             throw new RouteError("Expired refresh token");
         }
 
-        let newToken = await prisma.$transaction(async tx => {
+        const newToken = await prisma.$transaction(async tx => {
             await tx.refreshToken.delete({
                 where: { id: dbToken.id },
             });

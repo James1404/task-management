@@ -1,9 +1,10 @@
 import bodyParser from "body-parser";
 import express from "express";
-import { auth } from "../jwt";
-import prisma from "../client";
-import { validate, z } from "../middleware";
-import { Status } from "../../generated/prisma/enums";
+import { auth } from "../jwt.ts";
+import prisma from "../client.ts";
+import { validate, z } from "../middleware.ts";
+import { RouteError } from "../utils.ts";
+import { Status } from "../../generated/prisma/enums.ts";
 
 const router = express.Router();
 const jsonParser = bodyParser.json();
