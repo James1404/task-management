@@ -1,4 +1,5 @@
 import "@std/dotenv/load";
+import { parse } from "@std/yaml";
 
 const env = await load({
     export: true,
@@ -6,6 +7,8 @@ const env = await load({
 
 import express from "express";
 import morgan from "morgan";
+
+import swaggerUi from "swagger-ui-express";
 
 const app = express();
 const PORT = env.PORT ?? 3000;
@@ -24,6 +27,12 @@ app.use("/auth", authentication);
 app.use("/tasks", tasks);
 app.use("/user", user);
 app.use("/projects", projects);
+
+const file = await Deno.readFile("./openapi/openapi.yaml");
+const decoder = new TextDecoder("utf-8");
+const swaggerDocument = parse(decoder.decode(file));
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get("/", (_, res) => {
     res.send("Hello, World!");
