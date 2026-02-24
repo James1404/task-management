@@ -9,7 +9,7 @@ Users can register, log in, create projects, and manage tasks.
 
 ### Backend
 
-- Node.js
+- Deno
 - Express
 - TypeScript
 - Prisma
@@ -18,6 +18,7 @@ Users can register, log in, create projects, and manage tasks.
 
 ### Frontend
 
+- Node.js
 - React
 - TypeScript
 - Vite
