@@ -2,14 +2,9 @@ import { RouteError } from "../utils.ts";
 import { FastifyInstance } from "fastify";
 
 import { Type, Static } from "@sinclair/typebox";
-import authPlugin from "../authPlugin.ts";
+import authPlugin from "../plugins/auth.ts";
 
-export default async function routes(
-    fastify: FastifyInstance,
-    options: Object,
-) {
-    fastify.register(authPlugin);
-
+export default function routes(fastify: FastifyInstance, _options: object) {
     fastify.setErrorHandler((error, _request, reply) => {
         if (error instanceof RouteError) {
             const err = error as RouteError;
@@ -19,6 +14,8 @@ export default async function routes(
 
         throw error;
     });
+
+    fastify.register(authPlugin);
 
     fastify.get("/", async (request, reply) => {
         const projects = await fastify.prisma.project.findMany({

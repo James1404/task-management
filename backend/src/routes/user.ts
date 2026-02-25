@@ -1,13 +1,8 @@
 import { FastifyInstance } from "fastify";
 import { RouteError } from "../utils.ts";
-import authPlugin from "../authPlugin.ts";
+import authPlugin from "../plugins/auth.ts";
 
-export default async function routes(
-    fastify: FastifyInstance,
-    _options: object,
-) {
-    fastify.register(authPlugin);
-
+export default function routes(fastify: FastifyInstance, _options: object) {
     fastify.setErrorHandler((error, _request, reply) => {
         if (error instanceof RouteError) {
             const err = error as RouteError;
@@ -17,6 +12,8 @@ export default async function routes(
 
         throw error;
     });
+
+    fastify.register(authPlugin);
 
     fastify.get("/", (request, _reply) => {
         return `Hello there from tasks: user = ${request.user}`;

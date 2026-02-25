@@ -50,10 +50,7 @@ async function issueRefreshToken(
     return newToken;
 }
 
-export default async function routes(
-    fastify: FastifyInstance,
-    _options: object,
-) {
+export default function routes(fastify: FastifyInstance, _options: object) {
     fastify.setErrorHandler((error, _request, reply) => {
         if (error instanceof RouteError) {
             const err = error as RouteError;

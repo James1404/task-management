@@ -9,6 +9,8 @@
         "openapi": "deno run -A npm:openapi-typescript ./openapi/openapi.yaml -o ./generated/openapi/openapi.d.ts"
     },
     "imports": {
+        "@fastify/swagger": "npm:@fastify/swagger@^9.7.0",
+        "@fastify/swagger-ui": "npm:@fastify/swagger-ui@^5.2.5",
         "@fastify/type-provider-typebox": "npm:@fastify/type-provider-typebox@^6.1.0",
         "@prisma/adapter-pg": "npm:@prisma/adapter-pg@^7.4.1",
         "@prisma/client": "npm:@prisma/client@^7.4.1",

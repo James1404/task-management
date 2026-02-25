@@ -1,6 +1,6 @@
 import fp from "fastify-plugin";
 import { FastifyPluginAsync } from "fastify";
-import { PrismaClient } from "../generated/prisma/client.ts";
+import { PrismaClient } from "../../generated/prisma/client.ts";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 declare module "fastify" {

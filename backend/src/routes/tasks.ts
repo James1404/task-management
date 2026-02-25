@@ -1,12 +1,10 @@
 import { RouteError } from "../utils.ts";
 import { FastifyInstance } from "fastify";
-import authPlugin from "../authPlugin.ts";
+import authPlugin from "../plugins/auth.ts";
 import { Static, Type } from "@sinclair/typebox";
 import { Status } from "../../generated/prisma/enums.ts";
 
 export default function routes(fastify: FastifyInstance, _options: object) {
-    fastify.register(authPlugin);
-
     fastify.setErrorHandler((error, _request, reply) => {
         if (error instanceof RouteError) {
             const err = error as RouteError;
@@ -16,6 +14,8 @@ export default function routes(fastify: FastifyInstance, _options: object) {
 
         throw error;
     });
+
+    fastify.register(authPlugin);
 
     const GetQuery = Type.Object({
         projectId: Type.Number(),
