@@ -1,98 +1,136 @@
-import express from "express";
-import prisma from "../client.ts";
 import { RouteError } from "../utils.ts";
+import { FastifyInstance } from "fastify";
 
-const router = express.Router();
+import { Type, Static } from "@sinclair/typebox";
+import authPlugin from "../authPlugin.ts";
 
-router.get("/", async (_, res) => {
-    const user_id = res.locals["user"] as string;
+export default async function routes(
+    fastify: FastifyInstance,
+    options: Object,
+) {
+    fastify.register(authPlugin);
 
-    const projects = await prisma.project.findMany({
-        where: { ownerId: user_id },
-        include: { tasks: true },
+    fastify.setErrorHandler((error, _request, reply) => {
+        if (error instanceof RouteError) {
+            const err = error as RouteError;
+            reply.status(err.status_code);
+            return { error: err.message };
+        }
+
+        throw error;
     });
 
-    res.status(200).json(projects);
-});
-
-router.post("/", async (req, res) => {
-    const user_id = res.locals["user"] as string;
-
-    const project = await prisma.project.create({
-        data: {
-            owner: {
-                connect: {
-                    id: user_id,
-                },
-            },
-            name: req.body.name,
-            description: req.body.description,
-        },
-    });
-
-    res.status(200).json(project);
-});
-
-router.get("/:projectId", async (req, res) => {
-    try {
-        const user_id = res.locals["user"] as string;
-
-        const project = await prisma.project.findUnique({
-            where: { id: Number(req.params.projectId), ownerId: user_id },
+    fastify.get("/", async (request, reply) => {
+        const projects = await fastify.prisma.project.findMany({
+            where: { ownerId: request.user },
             include: { tasks: true },
         });
 
-        if (project == null) {
-            throw new RouteError("Project does not exist with ID");
-        }
+        reply.status(200);
+        return projects;
+    });
 
-        res.status(200).json(JSON.stringify(project));
-    } catch (e) {
-        const err = e as RouteError;
-        res.status(err.status_code).json({ error: err.message });
-    }
-});
+    const PostRequest = Type.Object({
+        name: Type.String(),
+        description: Type.String(),
+    });
+    type PostRequestType = Static<typeof PostRequest>;
 
-router.post("/:projectId", async (req, res) => {
-    try {
-        const user_id = res.locals["user"] as string;
+    fastify.post<{ Body: PostRequestType }>(
+        "/",
+        {
+            schema: {
+                body: PostRequest,
+            },
+        },
+        async (request, reply) => {
+            const project = await fastify.prisma.project.create({
+                data: {
+                    owner: {
+                        connect: {
+                            id: request.user,
+                        },
+                    },
+                    name: request.body.name,
+                    description: request.body.description,
+                },
+            });
 
-        const project = await prisma.project.findUnique({
-            where: { id: Number(req.params.projectId), ownerId: user_id },
-        });
+            reply.status(200);
+            return project;
+        },
+    );
 
-        if (project == null) {
-            throw new RouteError("Project does not exist with ID");
-        }
+    const ProjectParams = Type.Object({
+        projectId: Type.Number(),
+    });
+    type ProjectParamsType = Static<typeof ProjectParams>;
 
-        res.status(200).json(project);
-    } catch (e) {
-        const err = e as RouteError;
-        res.status(err.status_code).json({ error: err.message });
-    }
-});
+    fastify.get<{ Params: ProjectParamsType }>(
+        "/:projectId",
+        { schema: { params: ProjectParams } },
+        async (request, reply) => {
+            const project = await fastify.prisma.project.findUnique({
+                where: {
+                    id: request.params.projectId,
+                    ownerId: request.user,
+                },
+                include: { tasks: true },
+            });
 
-router.delete("/:projectId", async (req, res) => {
-    try {
-        const user_id = res.locals["user"] as string;
+            if (project == null) {
+                throw new RouteError("Project does not exist with ID");
+            }
 
-        const project = await prisma.project.findUnique({
-            where: { id: Number(req.params.projectId), ownerId: user_id },
-        });
+            reply.status(400);
+            return JSON.stringify(project);
+        },
+    );
 
-        if (project == null) {
-            throw new RouteError("Project does not exist with ID");
-        }
+    fastify.post<{ Params: ProjectParamsType }>(
+        "/:projectId",
+        { schema: { params: ProjectParams } },
+        async (request, reply) => {
+            const project = await fastify.prisma.project.findUnique({
+                where: {
+                    id: Number(request.params.projectId),
+                    ownerId: request.user,
+                },
+            });
 
-        await prisma.project.delete({
-            where: { id: Number(req.params.projectId), ownerId: user_id },
-        });
+            if (project == null) {
+                throw new RouteError("Project does not exist with ID");
+            }
 
-        res.status(204).end();
-    } catch (e) {
-        const err = e as RouteError;
-        res.status(err.status_code).json({ error: err.message });
-    }
-});
+            reply.status(200);
+            return JSON.stringify(project);
+        },
+    );
 
-export default router;
+    fastify.delete<{ Params: ProjectParamsType }>(
+        "/:projectId",
+        { schema: { params: ProjectParams } },
+        async (request, reply) => {
+            const project = await fastify.prisma.project.findUnique({
+                where: {
+                    id: Number(request.params.projectId),
+                    ownerId: request.user,
+                },
+            });
+
+            if (project == null) {
+                throw new RouteError("Project does not exist with ID");
+            }
+
+            await fastify.prisma.project.delete({
+                where: {
+                    id: Number(request.params.projectId),
+                    ownerId: request.user,
+                },
+            });
+
+            reply.status(204);
+            return {};
+        },
+    );
+}

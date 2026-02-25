@@ -1,10 +1,24 @@
-import express from "express";
+import { FastifyInstance } from "fastify";
+import { RouteError } from "../utils.ts";
+import authPlugin from "../authPlugin.ts";
 
-const router = express.Router();
+export default async function routes(
+    fastify: FastifyInstance,
+    _options: object,
+) {
+    fastify.register(authPlugin);
 
-router.get("/", (_, res) => {
-    const user_id = res.locals["user"] as string;
-    res.send(`Hello there from tasks: user = ${user_id}`);
-});
+    fastify.setErrorHandler((error, _request, reply) => {
+        if (error instanceof RouteError) {
+            const err = error as RouteError;
+            reply.status(err.status_code);
+            return { error: err.message };
+        }
 
-export default router;
+        throw error;
+    });
+
+    fastify.get("/", (request, _reply) => {
+        return `Hello there from tasks: user = ${request.user}`;
+    });
+}

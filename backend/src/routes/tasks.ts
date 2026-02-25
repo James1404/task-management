@@ -1,57 +1,78 @@
-import express from "express";
-import prisma from "../client.ts";
 import { RouteError } from "../utils.ts";
+import { FastifyInstance } from "fastify";
+import authPlugin from "../authPlugin.ts";
+import { Static, Type } from "@sinclair/typebox";
+import { Status } from "../../generated/prisma/enums.ts";
 
-const router = express.Router();
+export default function routes(fastify: FastifyInstance, _options: object) {
+    fastify.register(authPlugin);
 
-router.get("/", async (req, res) => {
-    try {
-        // const user_id = res.locals["user"] as string;
-
-        const projectId = Number(req.query["projectId"]);
-        if (projectId == null) {
-            throw new RouteError("Requires project id");
+    fastify.setErrorHandler((error, _request, reply) => {
+        if (error instanceof RouteError) {
+            const err = error as RouteError;
+            reply.status(err.status_code);
+            return { error: err.message };
         }
 
-        const tasks = await prisma.task.findMany({ where: { projectId } });
+        throw error;
+    });
 
-        res.status(200).json(JSON.stringify(tasks));
-    } catch (e) {
-        const err = e as RouteError;
-        res.status(err.status_code).json({ error: err.message });
-    }
-});
+    const GetQuery = Type.Object({
+        projectId: Type.Number(),
+    });
+    type GetQueryType = Static<typeof GetQuery>;
 
-router.post("/", async (req, res) => {
-    try {
-        const user_id = res.locals["user"] as string;
+    fastify.get<{ Querystring: GetQueryType }>(
+        "/",
+        { schema: { querystring: GetQuery } },
+        async (request, _reply) => {
+            const projectId = Number(request.query.projectId);
+            if (projectId == null) {
+                throw new RouteError("Requires project id");
+            }
 
-        const project = await prisma.project.findUnique({
-            where: { id: req.body.projectId },
-        });
+            const tasks = await fastify.prisma.task.findMany({
+                where: { projectId },
+            });
 
-        if (project == null) {
-            throw new RouteError("Project does not exist with ID");
-        }
+            return JSON.stringify(tasks);
+        },
+    );
 
-        if (project.ownerId != user_id) {
-            throw new RouteError("Access denied", 401);
-        }
+    const PostBody = Type.Object({
+        projectId: Type.Number(),
+        title: Type.String(),
+        description: Type.Optional(Type.String()),
+        status: Type.Enum(Status, { default: Status.TODO }),
+    });
+    type PostBodyType = Static<typeof PostBody>;
 
-        const task = await prisma.task.create({
-            data: {
-                title: req.body.title,
-                description: req.body.description ?? null,
-                status: req.body.status,
-                project: { connect: { id: req.body.projectId } },
-            },
-        });
+    fastify.post<{ Body: PostBodyType }>(
+        "/",
+        { schema: { body: PostBody } },
+        async (request, _reply) => {
+            const project = await fastify.prisma.project.findUnique({
+                where: { id: request.body.projectId },
+            });
 
-        res.status(200).json({ id: task.id });
-    } catch (e) {
-        const err = e as RouteError;
-        res.status(err.status_code).json({ error: err.message });
-    }
-});
+            if (project == null) {
+                throw new RouteError("Project does not exist with ID");
+            }
 
-export default router;
+            if (project.ownerId != request.user) {
+                throw new RouteError("Access denied", 401);
+            }
+
+            const task = await fastify.prisma.task.create({
+                data: {
+                    title: request.body.title,
+                    description: request.body.description,
+                    status: request.body.status,
+                    project: { connect: { id: request.body.projectId } },
+                },
+            });
+
+            return { id: task.id };
+        },
+    );
+}

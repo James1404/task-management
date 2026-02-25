@@ -1,6 +1,4 @@
-import type { RequestHandler } from "express";
 import { createHmac } from "node:crypto";
-import prisma from "./client.ts";
 import { Buffer } from "node:buffer";
 
 type Alg = "HS256" | "RS256";
@@ -69,36 +67,3 @@ export function decode(token: string): JWT | null {
         return null;
     }
 }
-
-export const auth: RequestHandler = async (req, res, next) => {
-    try {
-        if (req.headers.authorization == null) {
-            throw new Error("Authentication required");
-        }
-
-        const token = decode(req.headers.authorization);
-
-        if (token == null) {
-            throw new Error("Invalid token");
-        }
-
-        if (token.payload.exp < Date.now() / 1000) {
-            throw new Error("Expired token");
-        }
-
-        const user = await prisma.user.findUnique({
-            where: { id: token.payload.sub },
-        });
-
-        if (user == null) {
-            throw new Error("User does not exist");
-        }
-
-        res.locals["user"] = user.id;
-
-        next();
-    } catch (err) {
-        res.status(401);
-        res.json({ error: (err as Error).message });
-    }
-};
