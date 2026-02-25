@@ -1,16 +1,8 @@
-import bodyParser from "body-parser";
 import express from "express";
-import { auth } from "../jwt.ts";
 import prisma from "../client.ts";
-import { validate, z } from "../middleware.ts";
 import { RouteError } from "../utils.ts";
-import { Status } from "../../generated/prisma/enums.ts";
 
 const router = express.Router();
-const jsonParser = bodyParser.json();
-
-router.use(auth);
-router.use(jsonParser);
 
 router.get("/", async (req, res) => {
     try {
@@ -30,14 +22,7 @@ router.get("/", async (req, res) => {
     }
 });
 
-const postSchema = z.object({
-    projectId: z.number(),
-    title: z.string(),
-    description: z.string().optional(),
-    status: z.enum(Status),
-});
-
-router.post("/", validate(postSchema), async (req, res) => {
+router.post("/", async (req, res) => {
     try {
         const user_id = res.locals["user"] as string;
 

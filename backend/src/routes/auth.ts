@@ -1,4 +1,3 @@
-import bodyParser from "body-parser";
 import express from "express";
 import { createHash, randomBytes, scryptSync } from "node:crypto";
 import prisma from "../client.ts";
@@ -6,13 +5,10 @@ import { encode } from "../jwt.ts";
 
 import { v4 as uuidv4 } from "uuid";
 
-import { validate, z } from "../middleware.ts";
 import { Prisma } from "../../generated/prisma/client.ts";
 import { RouteError } from "../utils.ts";
 
 const router = express.Router();
-const jsonParser = bodyParser.json();
-router.use(jsonParser);
 
 function generateSalt(): string {
     return randomBytes(128).toString("base64");
@@ -22,16 +18,7 @@ function hashPassword(password: string, salt: string): string {
     const derivedKey = scryptSync(password, salt, 64);
     return derivedKey.toString("hex");
 }
-
-const registerSchema = z.object({
-    email: z.string(),
-    password: z.string(),
-
-    first_name: z.string(),
-    last_name: z.string(),
-});
-
-router.post("/register", validate(registerSchema), async (req, res) => {
+router.post("/register", async (req, res) => {
     try {
         const salt = generateSalt();
         const hash = hashPassword(req.body.password, salt);
@@ -47,8 +34,7 @@ router.post("/register", validate(registerSchema), async (req, res) => {
                 email: req.body.email,
                 password: hash,
                 salt: salt,
-                first_name: req.body.first_name,
-                last_name: req.body.last_name,
+                username: req.body.username,
             },
         });
 
@@ -65,12 +51,7 @@ router.post("/register", validate(registerSchema), async (req, res) => {
     }
 });
 
-const loginSchema = z.object({
-    email: z.string(),
-    password: z.string(),
-});
-
-router.post("/login", validate(loginSchema), async (req, res) => {
+router.post("/login", async (req, res) => {
     try {
         const user = await prisma.user.findUnique({
             where: { email: req.body.email },
@@ -94,8 +75,12 @@ router.post("/login", validate(loginSchema), async (req, res) => {
             access,
         });
     } catch (e) {
-        const err = e as RouteError;
-        res.status(err.status_code).json({ error: err.message });
+        if (e instanceof RouteError) {
+            const err = e as RouteError;
+            res.status(err.status_code).json({ error: err.message });
+        } else {
+            res.status(400).json({ error: (e as Error).message });
+        }
     }
 });
 
@@ -140,11 +125,7 @@ async function issueRefreshToken(
     return newToken;
 }
 
-const refreshSchema = z.object({
-    refresh: z.string(),
-});
-
-router.post("/refresh", validate(refreshSchema), async (req, res) => {
+router.post("/refresh", async (req, res) => {
     try {
         const hashedToken = hashRefreshToken(req.body.refresh);
         const dbToken = await prisma.refreshToken.findUnique({

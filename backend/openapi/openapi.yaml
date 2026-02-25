@@ -9,7 +9,7 @@ servers:
     description: Main (Production) server
 
 components:
-  securitySchema:
+  securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
@@ -17,15 +17,15 @@ components:
 
   responses:
     UnauthorizedError:
-      description: Access token is missing or invalid 
-      
+      description: Access token is missing or invalid
+
   schemas:
     RegisterSchema:
       type: object
       required:
         - email
         - password
-        - usernane
+        - username
       properties:
         email:
           type: string
@@ -34,7 +34,7 @@ components:
           type: string
         username:
           type: string
-          
+
     LoginSchema:
       type: object
       required:
@@ -54,7 +54,7 @@ components:
           type: string
         refresh:
           type: string
-    
+
     RefreshSchema:
       type: object
       required:
@@ -74,7 +74,7 @@ components:
           type: string
         createdAt:
           type: string
-    
+
     ProjectSchema:
       type: object
       required:
@@ -103,7 +103,7 @@ components:
           type: string
         title:
           type: string
-        description :
+        description:
           type: string
         status:
           type: string
@@ -117,6 +117,17 @@ components:
           type: number
 
 paths:
+  /:
+    get:
+      summary: Root
+      responses:
+        "200":
+          description: Succesfully registered
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: pong
   /auth/register:
     post:
       summary: Register an account
@@ -126,7 +137,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/RegisterSchema"
-      reponses:
+      responses:
         "200":
           description: Succesfully registered
           content:
@@ -144,7 +155,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/LoginSchema"
-      reponses:
+      responses:
         "200":
           description: Succesfully logged in
           content:
@@ -168,14 +179,14 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/RefreshSchema"
-      reponses:
+      responses:
         "200":
           description: Succesfully logged in
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthenticationResponse"
-  
+
   /user:
     get:
       summary: Get user information
@@ -191,7 +202,7 @@ paths:
         "401":
           $ref: "#/components/responses/UnauthorizedError"
 
-  /project:
+  /projects:
     get:
       summary: Get all projects linked with user
       security:
@@ -216,7 +227,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ProjectSchema"
-      reponses:
+      responses:
         "200":
           description: Succesfully created project
           content:
@@ -232,7 +243,7 @@ paths:
         - bearerAuth: []
       parameters:
         - in: path
-          name: userId
+          name: projectId
           schema:
             type: integer
           required: true
@@ -253,7 +264,7 @@ paths:
         - bearerAuth: []
       parameters:
         - in: path
-          name: userId
+          name: projectId
           schema:
             type: integer
           required: true
@@ -269,7 +280,7 @@ paths:
         - bearerAuth: []
       parameters:
         - in: path
-          name: userId
+          name: projectId
           schema:
             type: integer
           required: true
@@ -282,7 +293,7 @@ paths:
 
   /tasks:
     post:
-      description: ''
+      description: ""
       security:
         - bearerAuth: []
       requestBody:
@@ -298,10 +309,16 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
   /tasks/{projectId}:
     get:
-      description: Get all projects tied to project
+      description: Get all tasks tied to project
       security:
         - bearerAuth: []
-      parameters: []
+      parameters:
+        - in: path
+          name: projectId
+          schema:
+            type: integer
+          required: true
+          description: Numeric ID of the project that you want to retrieve tasks from
       responses:
         "200":
           description: Returns task ID

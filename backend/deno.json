@@ -5,7 +5,8 @@
         "db:generate": "deno run -A --env=.env npm:prisma generate",
         "db:push": "deno run -A --env=.env npm:prisma db push",
         "db:migrate": "deno run -A --env=.env npm:prisma migrate dev",
-        "db:studio": "deno run -A --env=.env npm:prisma studio"
+        "db:studio": "deno run -A --env=.env npm:prisma studio",
+        "openapi": "deno run -A npm:openapi-typescript ./openapi/openapi.yaml -o ./generated/openapi/openapi.d.ts"
     },
     "imports": {
         "@prisma/adapter-pg": "npm:@prisma/adapter-pg@^7.4.1",
@@ -19,8 +20,11 @@
         "@types/pg": "npm:@types/pg@^8.16.0",
         "body-parser": "npm:body-parser@^2.2.2",
         "express": "npm:express@^5.2.1",
+        "express-openapi-validator": "npm:express-openapi-validator@^5.6.2",
         "morgan": "npm:morgan@^1.10.1",
+        "openapi-typescript": "npm:openapi-typescript@^7.13.0",
         "pg": "npm:pg@^8.18.0",
+        "prisma": "npm:prisma@^7.4.1",
         "swagger-ui-express": "npm:swagger-ui-express@^5.0.1",
         "uuid": "npm:uuid@^13.0.0",
         "zod": "npm:zod@^4.3.6"
