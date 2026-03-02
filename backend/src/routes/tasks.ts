@@ -1,24 +1,14 @@
-import { RouteError } from "../utils.ts";
 import { FastifyInstance } from "fastify";
 import authPlugin from "../plugins/auth.ts";
 import { Static, Type } from "@sinclair/typebox";
 import { Status } from "../../generated/prisma/enums.ts";
+import task_service from "../services/tasks.services.ts";
 
 export default function routes(fastify: FastifyInstance, _options: object) {
-    fastify.setErrorHandler((error, _request, reply) => {
-        if (error instanceof RouteError) {
-            const err = error as RouteError;
-            reply.status(err.status_code);
-            return { error: err.message };
-        }
-
-        throw error;
-    });
-
     fastify.register(authPlugin);
 
     const GetQuery = Type.Object({
-        projectId: Type.Number(),
+        taskId: Type.Number(),
     });
     type GetQueryType = Static<typeof GetQuery>;
 
@@ -26,14 +16,10 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         "/",
         { schema: { querystring: GetQuery } },
         async (request, _reply) => {
-            const projectId = Number(request.query.projectId);
-            if (projectId == null) {
-                throw new RouteError("Requires project id");
-            }
-
-            const tasks = await fastify.prisma.task.findMany({
-                where: { projectId },
-            });
+            const tasks = await task_service.getTask(
+                request.query.taskId,
+                fastify.prisma,
+            );
 
             return JSON.stringify(tasks);
         },
@@ -51,28 +37,58 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         "/",
         { schema: { body: PostBody } },
         async (request, _reply) => {
-            const project = await fastify.prisma.project.findUnique({
-                where: { id: request.body.projectId },
-            });
-
-            if (project == null) {
-                throw new RouteError("Project does not exist with ID");
-            }
-
-            if (project.ownerId != request.user) {
-                throw new RouteError("Access denied", 401);
-            }
-
-            const task = await fastify.prisma.task.create({
-                data: {
-                    title: request.body.title,
-                    description: request.body.description,
-                    status: request.body.status,
-                    project: { connect: { id: request.body.projectId } },
-                },
-            });
+            const task = await task_service.createTask(
+                { user: request.user, ...request.body },
+                fastify.prisma,
+            );
 
             return { id: task.id };
+        },
+    );
+
+    const PutQuery = Type.Object({
+        taskId: Type.Number(),
+    });
+    type PutQueryType = Static<typeof PutQuery>;
+
+    const PutBody = Type.Object({
+        title: Type.Optional(Type.String()),
+        description: Type.Optional(Type.String()),
+        status: Type.Optional(Type.Enum(Status)),
+    });
+    type PutBodyType = Static<typeof PutBody>;
+
+    fastify.put<{ Body: PutBodyType; Querystring: PutQueryType }>(
+        "/",
+        { schema: { body: PutBody, querystring: PutQuery } },
+        async (request, reply) => {
+            await task_service.updateTask(
+                request.user,
+                request.query.taskId,
+                request.body,
+                fastify.prisma,
+            );
+
+            return reply.code(204).send();
+        },
+    );
+
+    const DeleteQuery = Type.Object({
+        taskId: Type.Number(),
+    });
+    type DeleteQueryType = Static<typeof DeleteQuery>;
+
+    fastify.delete<{ Querystring: DeleteQueryType }>(
+        "/",
+        { schema: { querystring: DeleteQuery } },
+        async (request, reply) => {
+            await task_service.deleteTask(
+                request.user,
+                request.query.taskId,
+                fastify.prisma,
+            );
+
+            return reply.code(204).send();
         },
     );
 }

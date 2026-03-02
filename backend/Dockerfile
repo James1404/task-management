@@ -1,17 +1,11 @@
-FROM denoland/deno:alpine AS builder
+FROM denoland/deno:latest AS builder
 WORKDIR /app
 COPY . .
+RUN deno install
 
-RUN deno install --entrypoint src/index.ts
-
-FROM denoland/deno:alpine
-
+FROM denoland/deno:latest
 WORKDIR /app
 COPY --from=builder /app .
-
-ENV HOST=0.0.0.0
-ENV PORT=4321
-
-EXPOSE 4321
-
-CMD ["deno", "run", "--allow-read", "--allow-env", "--allow-sys", "--allow-net", "src/index.ts"]
+# USER deno
+EXPOSE 3000
+CMD ["sh", "-c", "deno task db:deploy && deno run -A src/app.ts"]

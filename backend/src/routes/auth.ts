@@ -1,65 +1,14 @@
-import { createHash, randomBytes, scryptSync } from "node:crypto";
-import { encode } from "../jwt.ts";
-import { v4 as uuidv4 } from "uuid";
-import { RouteError } from "../utils.ts";
+import { UnauthorizedError } from "../utils/error.ts";
 import { FastifyInstance } from "fastify";
 import { Static, Type } from "@sinclair/typebox";
-import { Prisma } from "../../generated/prisma/client.ts";
-
-function generateSalt(): string {
-    return randomBytes(128).toString("base64");
-}
-
-function hashPassword(password: string, salt: string): string {
-    const derivedKey = scryptSync(password, salt, 64);
-    return derivedKey.toString("hex");
-}
-
-function createAccessToken(user_id: string): string {
-    return encode(
-        { alg: "HS256", typ: "JWT" },
-        {
-            sub: user_id,
-            iat: Date.now() / 1000,
-            exp: Date.now() / 1000 + 900,
-        },
-    );
-}
-function hashRefreshToken(token: string): string {
-    return createHash("sha256").update(token).digest("hex");
-}
-
-async function issueRefreshToken(
-    user_id: string,
-    tx: Prisma.TransactionClient,
-): Promise<string> {
-    const newToken = uuidv4();
-
-    await tx.refreshToken.create({
-        data: {
-            token_hash: hashRefreshToken(newToken),
-            user: {
-                connect: {
-                    id: user_id,
-                },
-            },
-            expiresAt: new Date(Date.now() + 604800000),
-        },
-    });
-
-    return newToken;
-}
+import auth_service from "../services/auth.services.ts";
+import { register } from "node:module";
 
 export default function routes(fastify: FastifyInstance, _options: object) {
-    fastify.setErrorHandler((error, _request, reply) => {
-        if (error instanceof RouteError) {
-            const err = error as RouteError;
-            reply.status(err.status_code);
-            return { error: err.message };
-        }
-
-        throw error;
+    const AccessTokenResponse = Type.Object({
+        access: Type.String(),
     });
+    type AccessTokenResponseType = Static<typeof AccessTokenResponse>;
 
     const RegisterBody = Type.Object({
         email: Type.String({ format: "email" }),
@@ -68,35 +17,30 @@ export default function routes(fastify: FastifyInstance, _options: object) {
     });
     type RegisterBodyType = Static<typeof RegisterBody>;
 
-    fastify.post<{ Body: RegisterBodyType }>(
+    fastify.post<{ Body: RegisterBodyType; Reply: AccessTokenResponseType }>(
         "/register",
-        { schema: { body: RegisterBody } },
-        async (request, _reply) => {
-            const salt = generateSalt();
-            const hash = hashPassword(request.body.password, salt);
-
-            if (
-                await fastify.prisma.user.findUnique({
-                    where: { email: request.body.email },
-                })
-            ) {
-                throw new RouteError(`Account with email already exists`);
-            }
-
-            const user = await fastify.prisma.user.create({
-                data: {
-                    email: request.body.email,
-                    password: hash,
-                    salt: salt,
-                    username: request.body.username,
+        {
+            schema: {
+                body: RegisterBody,
+                response: { 200: AccessTokenResponse },
+            },
+        },
+        async (request, reply) => {
+            const { refresh, access } = await auth_service.register(
+                {
+                    ...request.body,
                 },
+                fastify.prisma,
+            );
+
+            reply.setCookie("refresh", refresh, {
+                httpOnly: true,
+                secure: true,
+                sameSite: "lax",
+                path: "/auth/refresh",
             });
 
-            const refresh = await issueRefreshToken(user.id, fastify.prisma);
-            const access = createAccessToken(user.id);
-
             return {
-                refresh,
                 access,
             };
         },
@@ -108,29 +52,25 @@ export default function routes(fastify: FastifyInstance, _options: object) {
     });
     type LoginBodyType = Static<typeof LoginBody>;
 
-    fastify.post<{ Body: LoginBodyType }>(
+    fastify.post<{ Body: LoginBodyType; Reply: AccessTokenResponseType }>(
         "/login",
-        { schema: { body: LoginBody } },
-        async (request, _reply) => {
-            const user = await fastify.prisma.user.findUnique({
-                where: { email: request.body.email },
+        { schema: { body: LoginBody, response: { 200: AccessTokenResponse } } },
+        async (request, reply) => {
+            const { refresh, access } = await auth_service.login(
+                {
+                    ...request.body,
+                },
+                fastify.prisma,
+            );
+
+            reply.setCookie("refresh", refresh, {
+                httpOnly: true,
+                secure: true,
+                sameSite: "lax",
+                path: "/auth/refresh",
             });
 
-            if (user == null) {
-                throw new RouteError("Account does not exist");
-            }
-
-            const hash = hashPassword(request.body.password, user.salt);
-
-            if (hash != user.password) {
-                throw new RouteError("Invalid credentials");
-            }
-
-            const refresh = await issueRefreshToken(user.id, fastify.prisma);
-            const access = createAccessToken(user.id);
-
             return {
-                refresh,
                 access,
             };
         },
@@ -141,42 +81,35 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         return {};
     });
 
-    const RefreshBody = Type.Object({
-        refresh: Type.String(),
-    });
-    type RefreshBodyType = Static<typeof RefreshBody>;
-
-    fastify.post<{ Body: RefreshBodyType }>(
+    fastify.post<{ Reply: AccessTokenResponseType }>(
         "/refresh",
-        { schema: { body: RefreshBody } },
-        async (request, _reply) => {
-            const hashedToken = hashRefreshToken(request.body.refresh);
-            const dbToken = await fastify.prisma.refreshToken.findUnique({
-                where: { token_hash: hashedToken },
-            });
-
-            if (dbToken == null) {
-                throw new RouteError("Invalid refreplyh token");
+        {
+            schema: {
+                response: { 200: AccessTokenResponse },
+            },
+        },
+        async (request, reply) => {
+            const refreshToken = request.cookies["refresh"];
+            if (refreshToken == null) {
+                throw new UnauthorizedError("Requires refresh token");
             }
 
-            if (dbToken.expiresAt < new Date()) {
-                await fastify.prisma.refreshToken.delete({
-                    where: { id: dbToken.id },
-                });
-                throw new RouteError("Expired refreplyh token");
-            }
+            const { refresh, access } = await auth_service.refresh(
+                {
+                    refresh: refreshToken,
+                },
+                fastify.prisma,
+            );
 
-            const newToken = await fastify.prisma.$transaction(async tx => {
-                await tx.refreshToken.delete({
-                    where: { id: dbToken.id },
-                });
-
-                return await issueRefreshToken(dbToken.userId, tx);
+            reply.setCookie("refresh", refresh, {
+                httpOnly: true,
+                secure: true,
+                sameSite: "lax",
+                path: "/auth/refresh",
             });
 
             return {
-                refresh: newToken,
-                access: createAccessToken(dbToken.userId),
+                access,
             };
         },
     );

@@ -12,20 +12,30 @@ import process from "node:process";
 import prismaPlugin from "./plugins/prisma.ts";
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import swagger from "@fastify/swagger";
-
-const env = await load({
-    export: true,
-});
+import cors from "@fastify/cors";
+import cookie from "@fastify/cookie";
+import { UnauthorizedError } from "./utils/error.ts";
+import health from "./routes/health.ts";
 
 const fastify = Fastify({
     logger: true,
 }).withTypeProvider<TypeBoxTypeProvider>();
 
-const PORT = Number(env.PORT) ?? 3000;
+const PORT = 3000;
 
 // const file = await Deno.readFile("./openapi/openapi.yaml");
 // const decoder = new TextDecoder("utf-8");
 // const swaggerDocument = parse(decoder.decode(file));
+
+fastify.register(cors, {
+    origin: "http://localhost:5173",
+    credentials: true,
+});
+fastify.register(cookie);
+fastify.register(import("@fastify/rate-limit"), {
+    max: 100,
+    timeWindow: "1 minute",
+});
 
 fastify.register(prismaPlugin);
 
@@ -81,6 +91,17 @@ await fastify.register(import("@fastify/swagger-ui"), {
     transformSpecificationClone: true,
 });
 
+fastify.setErrorHandler((error, _request, reply) => {
+    if (error instanceof UnauthorizedError) {
+        const err = error as UnauthorizedError;
+        reply.status(err.status_code);
+        return { error: err.message };
+    }
+
+    throw error;
+});
+
+fastify.register(health, { prefix: "/health" });
 fastify.register(authentication, { prefix: "/auth" });
 fastify.register(user, { prefix: "/user" });
 fastify.register(projects, { prefix: "/projects" });
@@ -110,7 +131,7 @@ fastify.get(
 // fastify.swagger();
 
 try {
-    await fastify.listen({ port: PORT });
+    await fastify.listen({ port: PORT, host: "0.0.0.0" });
 } catch (err) {
     fastify.log.error(err);
     process.exit(1);

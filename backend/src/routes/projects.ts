@@ -1,20 +1,11 @@
-import { RouteError } from "../utils.ts";
+import { UnauthorizedError } from "../utils/error.ts";
 import { FastifyInstance } from "fastify";
 
 import { Type, Static } from "@sinclair/typebox";
 import authPlugin from "../plugins/auth.ts";
+import projectsServices from "../services/projects.services.ts";
 
 export default function routes(fastify: FastifyInstance, _options: object) {
-    fastify.setErrorHandler((error, _request, reply) => {
-        if (error instanceof RouteError) {
-            const err = error as RouteError;
-            reply.status(err.status_code);
-            return { error: err.message };
-        }
-
-        throw error;
-    });
-
     fastify.register(authPlugin);
 
     fastify.get("/", async (request, reply) => {
@@ -41,20 +32,17 @@ export default function routes(fastify: FastifyInstance, _options: object) {
             },
         },
         async (request, reply) => {
-            const project = await fastify.prisma.project.create({
-                data: {
-                    owner: {
-                        connect: {
-                            id: request.user,
-                        },
-                    },
+            const project = await projectsServices.createProject(
+                request.user,
+                {
                     name: request.body.name,
                     description: request.body.description,
                 },
-            });
+                fastify.prisma,
+            );
 
             reply.status(200);
-            return project;
+            return JSON.stringify(project);
         },
     );
 
@@ -76,7 +64,7 @@ export default function routes(fastify: FastifyInstance, _options: object) {
             });
 
             if (project == null) {
-                throw new RouteError("Project does not exist with ID");
+                throw new UnauthorizedError("Project does not exist with ID");
             }
 
             reply.status(400);
@@ -84,20 +72,16 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         },
     );
 
-    fastify.post<{ Params: ProjectParamsType }>(
+    fastify.put<{ Params: ProjectParamsType }>(
         "/:projectId",
         { schema: { params: ProjectParams } },
         async (request, reply) => {
-            const project = await fastify.prisma.project.findUnique({
-                where: {
-                    id: Number(request.params.projectId),
-                    ownerId: request.user,
-                },
-            });
-
-            if (project == null) {
-                throw new RouteError("Project does not exist with ID");
-            }
+            const project = await projectsServices.updateProject(
+                request.user,
+                request.params.projectId,
+                request.body,
+                fastify.prisma,
+            );
 
             reply.status(200);
             return JSON.stringify(project);
@@ -108,23 +92,11 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         "/:projectId",
         { schema: { params: ProjectParams } },
         async (request, reply) => {
-            const project = await fastify.prisma.project.findUnique({
-                where: {
-                    id: Number(request.params.projectId),
-                    ownerId: request.user,
-                },
-            });
-
-            if (project == null) {
-                throw new RouteError("Project does not exist with ID");
-            }
-
-            await fastify.prisma.project.delete({
-                where: {
-                    id: Number(request.params.projectId),
-                    ownerId: request.user,
-                },
-            });
+            await projectsServices.deleteProject(
+                request.user,
+                Number(request.params.projectId),
+                fastify.prisma,
+            );
 
             reply.status(204);
             return {};
