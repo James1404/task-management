@@ -1,3 +1,6 @@
 .direnv/
 .envrc
 .vscode/
+
+.env*
+!.env.example
