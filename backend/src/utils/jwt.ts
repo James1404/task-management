@@ -1,24 +1,24 @@
 import { createHmac } from "node:crypto";
 import { Buffer } from "node:buffer";
+import { User } from "../plugins/auth.plugin.ts";
 
 type Alg = "HS256" | "RS256";
 type Typ = "JWT";
 
-type Header = {
+interface Header {
     alg: Alg;
     typ: Typ;
-};
+}
 
-type Payload = {
-    sub: string;
+interface Payload extends User {
     iat: number;
     exp: number;
-};
+}
 
-type JWT = {
+interface JWT {
     header: Header;
     payload: Payload;
-};
+}
 
 const secret = Deno.env.get("JWT_SECRET") ?? "unknown";
 

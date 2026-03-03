@@ -2,15 +2,29 @@ import { UnauthorizedError } from "../utils/error.ts";
 import { FastifyInstance } from "fastify";
 
 import { Type, Static } from "@sinclair/typebox";
-import authPlugin from "../plugins/auth.ts";
+import authPlugin from "../plugins/auth.plugin.ts";
 import projectsServices from "../services/projects.services.ts";
 
-export default function routes(fastify: FastifyInstance, _options: object) {
-    fastify.register(authPlugin);
+export const ProjectParams = Type.Object({
+    projectId: Type.Number(),
+});
+export type ProjectParamsType = Static<typeof ProjectParams>;
+
+export const ProjectData = Type.Object({
+    name: Type.String(),
+    description: Type.String(),
+});
+export type ProjectDataType = Static<typeof ProjectData>;
+
+export default async function routes(
+    fastify: FastifyInstance,
+    _options: object,
+) {
+    await fastify.register(authPlugin);
 
     fastify.get("/", async (request, reply) => {
         const projects = await fastify.prisma.project.findMany({
-            where: { ownerId: request.user },
+            where: { ownerId: request.user.sub },
             include: { tasks: true },
         });
 
@@ -18,22 +32,18 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         return projects;
     });
 
-    const PostRequest = Type.Object({
-        name: Type.String(),
-        description: Type.String(),
-    });
-    type PostRequestType = Static<typeof PostRequest>;
-
-    fastify.post<{ Body: PostRequestType }>(
+    fastify.post<{ Body: ProjectDataType }>(
         "/",
         {
             schema: {
-                body: PostRequest,
+                body: ProjectData,
+                description: "Create new project",
+                response: {},
             },
         },
         async (request, reply) => {
             const project = await projectsServices.createProject(
-                request.user,
+                request.user.sub,
                 {
                     name: request.body.name,
                     description: request.body.description,
@@ -46,19 +56,14 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         },
     );
 
-    const ProjectParams = Type.Object({
-        projectId: Type.Number(),
-    });
-    type ProjectParamsType = Static<typeof ProjectParams>;
-
     fastify.get<{ Params: ProjectParamsType }>(
         "/:projectId",
-        { schema: { params: ProjectParams } },
+        { schema: { params: ProjectParams, description: "Get project data" } },
         async (request, reply) => {
             const project = await fastify.prisma.project.findUnique({
                 where: {
                     id: request.params.projectId,
-                    ownerId: request.user,
+                    ownerId: request.user.sub,
                 },
                 include: { tasks: true },
             });
@@ -72,12 +77,18 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         },
     );
 
-    fastify.put<{ Params: ProjectParamsType }>(
+    fastify.put<{ Body: ProjectDataType; Params: ProjectParamsType }>(
         "/:projectId",
-        { schema: { params: ProjectParams } },
+        {
+            schema: {
+                body: ProjectData,
+                params: ProjectParams,
+                description: "Update project data",
+            },
+        },
         async (request, reply) => {
             const project = await projectsServices.updateProject(
-                request.user,
+                request.user.sub,
                 request.params.projectId,
                 request.body,
                 fastify.prisma,
@@ -90,10 +101,10 @@ export default function routes(fastify: FastifyInstance, _options: object) {
 
     fastify.delete<{ Params: ProjectParamsType }>(
         "/:projectId",
-        { schema: { params: ProjectParams } },
+        { schema: { params: ProjectParams, description: "Delete a project" } },
         async (request, reply) => {
             await projectsServices.deleteProject(
-                request.user,
+                request.user.sub,
                 Number(request.params.projectId),
                 fastify.prisma,
             );

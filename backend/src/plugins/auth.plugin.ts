@@ -2,32 +2,41 @@ import fp from "fastify-plugin";
 import { FastifyPluginAsync } from "fastify";
 import { decode } from "../utils/jwt.ts";
 import { Type } from "@sinclair/typebox";
+import { Role } from "../../generated/prisma/enums.ts";
+import { UnauthorizedError } from "../utils/error.ts";
 
 declare module "fastify" {
     interface FastifyRequest {
-        user: string;
+        user: User;
     }
 }
 
 const UnauthorizedResponseSchema = Type.Object({
-    statusCode: Type.Literal(401),
-    error: Type.Literal("Unauthorized"),
-    message: Type.String(),
+    error: Type.String(),
 });
 
 const ForbiddenResponseSchema = Type.Object({
-    statusCode: Type.Literal(403),
-    error: Type.Literal("Forbidden"),
-    message: Type.String(),
+    error: Type.String(),
 });
 
+export interface User {
+    sub: string;
+    role: Role;
+    username: string;
+    email: string;
+}
+
 const authPlugin: FastifyPluginAsync = fp(async (server, _options) => {
-    server.decorateRequest("user", "");
+    server.decorateRequest("user");
 
     server.addHook("onRoute", routeOptions => {
         const existingResponses = routeOptions.schema?.response || {};
+        const existingHeaders = routeOptions.schema?.headers || {};
         routeOptions.schema = {
             ...routeOptions.schema,
+            headers: {
+                ...existingHeaders,
+            },
             response: {
                 ...existingResponses,
                 401: {
@@ -43,20 +52,30 @@ const authPlugin: FastifyPluginAsync = fp(async (server, _options) => {
         };
     });
 
-    server.addHook("preHandler", async (request, reply) => {
-        const authorization = request.headers.authorization;
-        if (authorization == null) {
-            return reply.status(401).send({ error: "Authentication required" });
+    server.addHook("preHandler", async (request, _reply) => {
+        const authHeader = request.headers.authorization;
+        if (authHeader == null) {
+            throw new UnauthorizedError(
+                "Authentication must be sent via header required",
+            );
         }
 
-        const token = decode(authorization);
+        const [bearer, auth] = authHeader.split(" ", 2);
+
+        if (bearer != "Bearer") {
+            throw new UnauthorizedError(
+                'Only "Bearer" token authentication is valid',
+            );
+        }
+
+        const token = decode(auth);
 
         if (token == null) {
-            return reply.status(400).send({ error: "Invalid token" });
+            throw new UnauthorizedError("Invalid token");
         }
 
         if (token.payload.exp < Date.now() / 1000) {
-            return reply.status(400).send({ error: "Expired token" });
+            throw new UnauthorizedError("Expired token");
         }
 
         const user = await server.prisma.user.findUnique({
@@ -64,10 +83,10 @@ const authPlugin: FastifyPluginAsync = fp(async (server, _options) => {
         });
 
         if (user == null) {
-            return reply.status(404).send({ error: "User does not exist" });
+            throw new UnauthorizedError();
         }
 
-        request.user = user.id;
+        request.user = token.payload;
     });
 });
 

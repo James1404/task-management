@@ -1,5 +1,4 @@
 import "@std/dotenv/load";
-import { parse } from "@std/yaml";
 
 import Fastify from "fastify";
 
@@ -7,14 +6,13 @@ import authentication from "./routes/auth.ts";
 import tasks from "./routes/tasks.ts";
 import user from "./routes/user.ts";
 import projects from "./routes/projects.ts";
-import { load } from "@std/dotenv";
 import process from "node:process";
 import prismaPlugin from "./plugins/prisma.ts";
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import swagger from "@fastify/swagger";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
-import { UnauthorizedError } from "./utils/error.ts";
+import { AppError } from "./utils/error.ts";
 import health from "./routes/health.ts";
 
 const fastify = Fastify({
@@ -76,36 +74,41 @@ await fastify.register(import("@fastify/swagger-ui"), {
         deepLinking: false,
     },
     uiHooks: {
-        onRequest: function (request, reply, next) {
+        onRequest: function (_request, _reply, next) {
             next();
         },
-        preHandler: function (request, reply, next) {
+        preHandler: function (_request, _reply, next) {
             next();
         },
     },
     staticCSP: true,
     transformStaticCSP: header => header,
-    transformSpecification: (swaggerObject, request, reply) => {
+    transformSpecification: (swaggerObject, _request, _reply) => {
         return swaggerObject;
     },
     transformSpecificationClone: true,
 });
 
 fastify.setErrorHandler((error, _request, reply) => {
-    if (error instanceof UnauthorizedError) {
-        const err = error as UnauthorizedError;
-        reply.status(err.status_code);
-        return { error: err.message };
+    if (error instanceof AppError) {
+        if (error.clearAuthCookie) {
+            reply.clearCookie("refreshToken", {
+                path: "/auth/refresh",
+            });
+        }
+
+        reply.code(error.statusCode);
+        return { error: error.message };
     }
 
     throw error;
 });
 
-fastify.register(health, { prefix: "/health" });
-fastify.register(authentication, { prefix: "/auth" });
-fastify.register(user, { prefix: "/user" });
-fastify.register(projects, { prefix: "/projects" });
-fastify.register(tasks, { prefix: "/tasks" });
+await fastify.register(health, { prefix: "/health" });
+await fastify.register(authentication, { prefix: "/auth" });
+await fastify.register(user, { prefix: "/user" });
+await fastify.register(projects, { prefix: "/projects" });
+await fastify.register(tasks, { prefix: "/tasks" });
 
 fastify.get(
     "/",

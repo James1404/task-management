@@ -1,10 +1,13 @@
 import { FastifyInstance } from "fastify";
-import authPlugin from "../plugins/auth.ts";
+import authPlugin from "../plugins/auth.plugin.ts";
 
-export default function routes(fastify: FastifyInstance, _options: object) {
-    fastify.register(authPlugin);
+export default async function routes(
+    fastify: FastifyInstance,
+    _options: object,
+) {
+    await fastify.register(authPlugin);
 
     fastify.get("/", (request, _reply) => {
-        return `Hello there from tasks: user = ${request.user}`;
+        return JSON.stringify(request.user);
     });
 }

@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 
 export default function routes(fastify: FastifyInstance, _options: object) {
     fastify.get("/", async (_response, reply) => {
-        return reply.code(200).send();
+        await reply.code(200).send();
     });
 
     fastify.get("/ready", async (_response, reply) => {

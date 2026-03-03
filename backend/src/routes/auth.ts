@@ -1,8 +1,11 @@
-import { UnauthorizedError } from "../utils/error.ts";
+import {
+    InvalidCredentialsResponseSchema,
+    UnauthorizedError,
+    UnauthorizedResponseSchema,
+} from "../utils/error.ts";
 import { FastifyInstance } from "fastify";
 import { Static, Type } from "@sinclair/typebox";
-import auth_service from "../services/auth.services.ts";
-import { register } from "node:module";
+import authServices from "../services/auth.services.ts";
 
 export default function routes(fastify: FastifyInstance, _options: object) {
     const AccessTokenResponse = Type.Object({
@@ -22,11 +25,16 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         {
             schema: {
                 body: RegisterBody,
-                response: { 200: AccessTokenResponse },
+                response: {
+                    200: AccessTokenResponse,
+                    ...InvalidCredentialsResponseSchema,
+                },
+                description:
+                    "Register an account with a username, email and password",
             },
         },
         async (request, reply) => {
-            const { refresh, access } = await auth_service.register(
+            const { refresh, access } = await authServices.register(
                 {
                     ...request.body,
                 },
@@ -54,9 +62,19 @@ export default function routes(fastify: FastifyInstance, _options: object) {
 
     fastify.post<{ Body: LoginBodyType; Reply: AccessTokenResponseType }>(
         "/login",
-        { schema: { body: LoginBody, response: { 200: AccessTokenResponse } } },
+        {
+            schema: {
+                body: LoginBody,
+                response: {
+                    200: AccessTokenResponse,
+                    ...InvalidCredentialsResponseSchema,
+                },
+                description:
+                    "Login to your account, returns refresh and access token",
+            },
+        },
         async (request, reply) => {
-            const { refresh, access } = await auth_service.login(
+            const { refresh, access } = await authServices.login(
                 {
                     ...request.body,
                 },
@@ -85,16 +103,20 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         "/refresh",
         {
             schema: {
-                response: { 200: AccessTokenResponse },
+                response: {
+                    200: AccessTokenResponse,
+                    ...UnauthorizedResponseSchema,
+                },
+                description: "Refresh your authentication tokens",
             },
         },
         async (request, reply) => {
             const refreshToken = request.cookies["refresh"];
             if (refreshToken == null) {
-                throw new UnauthorizedError("Requires refresh token");
+                throw new UnauthorizedError("Refresh token missing");
             }
 
-            const { refresh, access } = await auth_service.refresh(
+            const { refresh, access } = await authServices.refresh(
                 {
                     refresh: refreshToken,
                 },

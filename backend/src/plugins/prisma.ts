@@ -9,7 +9,7 @@ declare module "fastify" {
     }
 }
 
-const prismaPlugin: FastifyPluginAsync = fp(async (server, options) => {
+const prismaPlugin: FastifyPluginAsync = fp(async (server, _options) => {
     const adapter = new PrismaPg({
         connectionString: Deno.env.get("DATABASE_URL"),
     });

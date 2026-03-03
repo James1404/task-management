@@ -2,9 +2,9 @@ import { createHash, randomBytes, scryptSync } from "node:crypto";
 import { Prisma } from "../../generated/prisma/browser.ts";
 import { encode } from "../utils/jwt.ts";
 import { v4 as uuidv4 } from "uuid";
-import { UnauthorizedError } from "../utils/error.ts";
+import { InvalidCredentialsError, UnauthorizedError } from "../utils/error.ts";
 import { PrismaClient } from "../../generated/prisma/client.ts";
-import { Role } from "../../generated/prisma/enums.ts";
+import { User } from "../plugins/auth.plugin.ts";
 
 function generateSalt() {
     return randomBytes(128).toString("base64");
@@ -14,13 +14,6 @@ function hashPassword(password: string, salt: string) {
     const derivedKey = scryptSync(password, salt, 64);
     return derivedKey.toString("hex");
 }
-
-type User = {
-    sub: string;
-    role: Role;
-    username: string;
-    email: string;
-};
 
 function createAccessToken(user: User) {
     return encode(
@@ -73,7 +66,7 @@ async function register(details: Register, prisma: PrismaClient) {
             where: { email: details.email },
         })
     ) {
-        throw new UnauthorizedError(`Account with email already exists`);
+        throw new InvalidCredentialsError("Email already in use");
     }
 
     const user = await prisma.user.create({
@@ -110,13 +103,13 @@ async function login(details: Login, prisma: PrismaClient) {
     });
 
     if (user == null) {
-        throw new UnauthorizedError("Account does not exist");
+        throw new InvalidCredentialsError();
     }
 
     const hash = hashPassword(details.password, user.salt);
 
     if (hash != user.password) {
-        throw new UnauthorizedError("Invalid credentials");
+        throw new InvalidCredentialsError();
     }
 
     const refresh = await issueRefreshToken(user.id, prisma);
@@ -147,21 +140,21 @@ async function refresh(details: Refresh, prisma: PrismaClient) {
         throw new UnauthorizedError("Invalid refresh token");
     }
 
-    const user = await prisma.user.findUnique({
-        where: {
-            id: dbToken?.userId,
-        },
-    });
-
-    if (user == null) {
-        throw new UnauthorizedError("User does not exist for token");
-    }
-
     if (dbToken.expiresAt < new Date()) {
         await prisma.refreshToken.delete({
             where: { id: dbToken.id },
         });
-        throw new UnauthorizedError("Expired refresh token");
+        throw new UnauthorizedError("Refresh token expired");
+    }
+
+    const user = await prisma.user.findUnique({
+        where: {
+            id: dbToken.userId,
+        },
+    });
+
+    if (user == null) {
+        throw new UnauthorizedError();
     }
 
     const refresh = await prisma.$transaction(async tx => {

@@ -1,15 +1,44 @@
 import { PrismaClient, Task } from "../../generated/prisma/client.ts";
 import { Status } from "../../generated/prisma/enums.ts";
-import { UnauthorizedError } from "../utils/error.ts";
+import { User } from "../plugins/auth.plugin.ts";
+import { ForbiddenError, NotFoundError } from "../utils/error.ts";
 
-async function getTask(id: number, prisma: PrismaClient) {
-    return await prisma.task.findMany({
+async function getProject(id: number, user: User, prisma: PrismaClient) {
+    const project = await prisma.project.findUnique({
         where: { id },
+        include: {
+            tasks: true,
+        },
     });
+
+    if (project == null) {
+        throw new NotFoundError("Project not found");
+    }
+
+    if (project.ownerId != user.sub) {
+        throw new ForbiddenError();
+    }
+
+    return project;
+}
+
+async function getTask(id: number, user: User, prisma: PrismaClient) {
+    const task = await prisma.task.findUnique({
+        where: { id },
+        include: { project: true },
+    });
+
+    if (task == null) {
+        throw new NotFoundError("Task not found");
+    }
+
+    await getProject(task.projectId, user, prisma);
+
+    return task;
 }
 
 interface Create {
-    user: string;
+    user: User;
     projectId: number;
     title: string;
     description?: string;
@@ -17,17 +46,7 @@ interface Create {
 }
 
 async function createTask(details: Create, prisma: PrismaClient) {
-    const project = await prisma.project.findUnique({
-        where: { id: details.projectId },
-    });
-
-    if (project == null) {
-        throw new UnauthorizedError("Project does not exist with ID");
-    }
-
-    if (project.ownerId != details.user) {
-        throw new UnauthorizedError("Access denied");
-    }
+    getProject(details.projectId, details.user, prisma);
 
     return await prisma.task.create({
         data: {
@@ -42,19 +61,19 @@ async function createTask(details: Create, prisma: PrismaClient) {
 type Update = Partial<Omit<Task, "id" | "projectId">>;
 
 async function updateTask(
-    user: string,
+    user: User,
     taskId: number,
     details: Update,
     prisma: PrismaClient,
 ) {
     // KNOWLEDGE: Updating fields to "undefined" doesnt change them.
     return await prisma.task.update({
-        where: { id: taskId, project: { ownerId: user } },
+        where: { id: taskId, project: { ownerId: user.sub } },
         data: { ...details },
     });
 }
 
-async function deleteTask(user: string, taskId: number, prisma: PrismaClient) {
+async function deleteTask(user: User, taskId: number, prisma: PrismaClient) {
     const task = await prisma.task.findUnique({
         where: { id: taskId },
         include: {
@@ -63,11 +82,11 @@ async function deleteTask(user: string, taskId: number, prisma: PrismaClient) {
     });
 
     if (task == null) {
-        throw new UnauthorizedError("Task does not exists");
+        throw new NotFoundError("Task not found");
     }
 
-    if (task.project.ownerId != user) {
-        throw new UnauthorizedError("Incorrect credentials");
+    if (task.project.ownerId != user.sub) {
+        throw new ForbiddenError();
     }
 
     await prisma.task.delete({ where: { id: taskId } });

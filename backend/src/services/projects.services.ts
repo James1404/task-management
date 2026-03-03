@@ -1,5 +1,5 @@
 import { PrismaClient, Project } from "../../generated/prisma/client.ts";
-import { UnauthorizedError } from "../utils/error.ts";
+import { NotFoundError } from "../utils/error.ts";
 
 async function getProject(user: string, id: number, prisma: PrismaClient) {
     return await prisma.project.findUnique({ where: { id, ownerId: user } });
@@ -48,7 +48,7 @@ async function deleteProject(user: string, id: number, prisma: PrismaClient) {
     });
 
     if (project == null) {
-        throw new UnauthorizedError("Project does not exist with ID");
+        throw new NotFoundError("Project not found");
     }
 
     await prisma.project.delete({ where: { id, ownerId: user } });

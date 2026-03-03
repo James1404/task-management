@@ -1,23 +1,27 @@
 import { FastifyInstance } from "fastify";
-import authPlugin from "../plugins/auth.ts";
+import authPlugin from "../plugins/auth.plugin.ts";
 import { Static, Type } from "@sinclair/typebox";
 import { Status } from "../../generated/prisma/enums.ts";
-import task_service from "../services/tasks.services.ts";
+import taskServices from "../services/tasks.services.ts";
 
-export default function routes(fastify: FastifyInstance, _options: object) {
-    fastify.register(authPlugin);
+const TaskIdQuery = Type.Object({
+    taskId: Type.Number(),
+});
+type TaskIdQueryType = Static<typeof TaskIdQuery>;
 
-    const GetQuery = Type.Object({
-        taskId: Type.Number(),
-    });
-    type GetQueryType = Static<typeof GetQuery>;
+export default async function routes(
+    fastify: FastifyInstance,
+    _options: object,
+) {
+    await fastify.register(authPlugin);
 
-    fastify.get<{ Querystring: GetQueryType }>(
+    fastify.get<{ Querystring: TaskIdQueryType }>(
         "/",
-        { schema: { querystring: GetQuery } },
+        { schema: { querystring: TaskIdQuery } },
         async (request, _reply) => {
-            const tasks = await task_service.getTask(
+            const tasks = await taskServices.getTask(
                 request.query.taskId,
+                request.user,
                 fastify.prisma,
             );
 
@@ -37,7 +41,7 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         "/",
         { schema: { body: PostBody } },
         async (request, _reply) => {
-            const task = await task_service.createTask(
+            const task = await taskServices.createTask(
                 { user: request.user, ...request.body },
                 fastify.prisma,
             );
@@ -46,23 +50,24 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         },
     );
 
-    const PutQuery = Type.Object({
-        taskId: Type.Number(),
-    });
-    type PutQueryType = Static<typeof PutQuery>;
-
-    const PutBody = Type.Object({
+    const UpdateBody = Type.Object({
         title: Type.Optional(Type.String()),
         description: Type.Optional(Type.String()),
         status: Type.Optional(Type.Enum(Status)),
     });
-    type PutBodyType = Static<typeof PutBody>;
+    type PutBodyType = Static<typeof UpdateBody>;
 
-    fastify.put<{ Body: PutBodyType; Querystring: PutQueryType }>(
+    fastify.put<{ Body: PutBodyType; Querystring: TaskIdQueryType }>(
         "/",
-        { schema: { body: PutBody, querystring: PutQuery } },
+        {
+            schema: {
+                body: UpdateBody,
+                querystring: TaskIdQuery,
+                description: "Update a task",
+            },
+        },
         async (request, reply) => {
-            await task_service.updateTask(
+            await taskServices.updateTask(
                 request.user,
                 request.query.taskId,
                 request.body,
@@ -73,16 +78,11 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         },
     );
 
-    const DeleteQuery = Type.Object({
-        taskId: Type.Number(),
-    });
-    type DeleteQueryType = Static<typeof DeleteQuery>;
-
-    fastify.delete<{ Querystring: DeleteQueryType }>(
+    fastify.delete<{ Querystring: TaskIdQueryType }>(
         "/",
-        { schema: { querystring: DeleteQuery } },
+        { schema: { querystring: TaskIdQuery, description: "Delete a task" } },
         async (request, reply) => {
-            await task_service.deleteTask(
+            await taskServices.deleteTask(
                 request.user,
                 request.query.taskId,
                 fastify.prisma,
