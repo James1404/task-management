@@ -5,30 +5,12 @@ import { v4 as uuidv4 } from "uuid";
 import { InvalidCredentialsError, UnauthorizedError } from "../utils/error.ts";
 import { PrismaClient } from "../../generated/prisma/client.ts";
 import { User } from "../plugins/auth.plugin.ts";
-
-function generateSalt() {
-    return randomBytes(128).toString("base64");
-}
-
-function hashPassword(password: string, salt: string) {
-    const derivedKey = scryptSync(password, salt, 64);
-    return derivedKey.toString("hex");
-}
-
-function createAccessToken(user: User) {
-    return encode(
-        { alg: "HS256", typ: "JWT" },
-        {
-            ...user,
-            iat: Date.now() / 1000,
-            exp: Date.now() / 1000 + 900,
-        },
-    );
-}
-
-function hashRefreshToken(token: string) {
-    return createHash("sha256").update(token).digest("hex");
-}
+import {
+    createAccessToken,
+    generateSalt,
+    hashPassword,
+    hashRefreshToken,
+} from "../utils/auth.utils.ts";
 
 async function issueRefreshToken(
     user_id: string,
@@ -126,6 +108,69 @@ async function login(details: Login, prisma: PrismaClient) {
     };
 }
 
+interface Login {
+    email: string;
+    password: string;
+}
+
+async function logout(user: User, refresh: string, prisma: PrismaClient) {
+    const refreshRow = await prisma.refreshToken.findUnique({
+        where: {
+            token_hash: hashRefreshToken(refresh),
+        },
+    });
+
+    if (!refreshRow) {
+        throw new UnauthorizedError();
+    }
+
+    if (refreshRow.userId != user.sub) {
+        throw new UnauthorizedError();
+    }
+
+    await prisma.refreshToken.deleteMany({ where: { id: refreshRow.id } });
+
+    // const user = await prisma.user.findUnique({
+    //     where: { email: details.email },
+    // });
+    // if (user == null) {
+    //     throw new InvalidCredentialsError();
+    // }
+    // const hash = hashPassword(details.password, user.salt);
+    // if (hash != user.password) {
+    //     throw new InvalidCredentialsError();
+    // }
+    // const refresh = await issueRefreshToken(user.id, prisma);
+    // const access = createAccessToken({
+    //     sub: user.id,
+    //     username: user.username,
+    //     email: user.email,
+    //     role: user.role,
+    // });
+    // return {
+    //     refresh,
+    //     access,
+    // };
+}
+
+async function logoutAll(user: User, refresh: string, prisma: PrismaClient) {
+    const refreshRow = await prisma.refreshToken.findUnique({
+        where: {
+            token_hash: hashRefreshToken(refresh),
+        },
+    });
+
+    if (!refreshRow) {
+        throw new UnauthorizedError();
+    }
+
+    if (refreshRow.userId != user.sub) {
+        throw new UnauthorizedError();
+    }
+
+    await prisma.refreshToken.deleteMany({ where: { userId: user.sub } });
+}
+
 interface Refresh {
     refresh: string;
 }
@@ -178,4 +223,4 @@ async function refresh(details: Refresh, prisma: PrismaClient) {
     };
 }
 
-export default { register, login, refresh };
+export default { register, login, logout, logoutAll, refresh };

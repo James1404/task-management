@@ -94,10 +94,67 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         },
     );
 
-    fastify.post("/logout", (_, reply) => {
-        reply.status(502);
-        return {};
-    });
+    fastify.post(
+        "/logout",
+        {
+            schema: {
+                response: {
+                    200: Type.Object({}),
+                    ...UnauthorizedResponseSchema,
+                },
+                description: "Logout of a session",
+            },
+        },
+        async (request, reply) => {
+            const refreshToken = request.cookies["refresh"];
+            if (refreshToken == null) {
+                throw new UnauthorizedError("Refresh token missing");
+            }
+
+            await authServices.logout(
+                request.user,
+                refreshToken,
+                fastify.prisma,
+            );
+
+            reply.clearCookie("refreshToken", {
+                path: "/auth/refresh",
+            });
+
+            return reply.code(200).send();
+        },
+    );
+
+    fastify.post(
+        "/logoutAll",
+        {
+            schema: {
+                response: {
+                    200: Type.Object({}),
+                    ...UnauthorizedResponseSchema,
+                },
+                description: "Logout of all session",
+            },
+        },
+        async (request, reply) => {
+            const refreshToken = request.cookies["refresh"];
+            if (refreshToken == null) {
+                throw new UnauthorizedError("Refresh token missing");
+            }
+
+            await authServices.logout(
+                request.user,
+                refreshToken,
+                fastify.prisma,
+            );
+
+            reply.clearCookie("refreshToken", {
+                path: "/auth/refresh",
+            });
+
+            return reply.code(200).send();
+        },
+    );
 
     fastify.post<{ Reply: AccessTokenResponseType }>(
         "/refresh",
