@@ -4,7 +4,6 @@ import Fastify from "fastify";
 
 import authentication from "./routes/auth.ts";
 import tasks from "./routes/tasks.ts";
-import user from "./routes/user.ts";
 import projects from "./routes/projects.ts";
 import process from "node:process";
 import prismaPlugin from "./plugins/prisma.ts";
@@ -14,6 +13,7 @@ import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import { AppError } from "./utils/error.ts";
 import health from "./routes/health.ts";
+import account from "./routes/account.ts";
 
 const fastify = Fastify({
     logger: true,
@@ -106,7 +106,7 @@ fastify.setErrorHandler((error, _request, reply) => {
 
 await fastify.register(health, { prefix: "/health" });
 await fastify.register(authentication, { prefix: "/auth" });
-await fastify.register(user, { prefix: "/user" });
+await fastify.register(account, { prefix: "/account" });
 await fastify.register(projects, { prefix: "/projects" });
 await fastify.register(tasks, { prefix: "/tasks" });
 
