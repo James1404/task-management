@@ -99,8 +99,8 @@ export default async function routes(
         },
     );
 
-    fastify.delete<{ Params: ProjectParamsType }>(
-        "/:projectId",
+    fastify.post<{ Params: ProjectParamsType }>(
+        "/delete/:projectId",
         { schema: { params: ProjectParams, description: "Delete a project" } },
         async (request, reply) => {
             await projectsServices.deleteProject(

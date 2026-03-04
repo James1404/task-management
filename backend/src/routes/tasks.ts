@@ -78,8 +78,8 @@ export default async function routes(
         },
     );
 
-    fastify.delete<{ Querystring: TaskIdQueryType }>(
-        "/",
+    fastify.post<{ Querystring: TaskIdQueryType }>(
+        "/delete",
         { schema: { querystring: TaskIdQuery, description: "Delete a task" } },
         async (request, reply) => {
             await taskServices.deleteTask(
