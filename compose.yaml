@@ -4,39 +4,37 @@ services:
     networks:
       - internal
     ports:
-      - "4321:3000"
+      - 3000:3000
     env_file:
-      - ./backend/.env
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      - .env.production
+    depends_on:
+      postgres_db:
+        condition: service_healthy
   postgres_db:
     image: postgres:15
     hostname: postgres_db
     restart: always
     volumes:
       - postgres_data:/var/lib/postgresql
+    networks:
+      - internal
     env_file:
-      - ./backend/.env
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - ${POSTGRES_PORT}:5432
+      - .env.production
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 10s
       timeout: 5s
       retries: 3
+  adminer:
     networks:
       - internal
-  adminer:
     image: adminer
     restart: always
     ports:
       - 8080:8080
+    depends_on:
+      postgres_db:
+        condition: service_healthy
 
 networks:
   internal:
