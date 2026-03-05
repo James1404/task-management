@@ -1,20 +1,22 @@
 import { UnauthorizedError } from "../utils/error.ts";
 import { FastifyInstance } from "fastify";
 
-import { Type, Static } from "@sinclair/typebox";
+import { Type, Static } from "typebox";
+
 import authPlugin from "../plugins/auth.plugin.ts";
 import projectsServices from "../services/projects.services.ts";
+import {
+    ProjectDataSchema,
+    ProjectDataSchemaType,
+    ProjectPrismaMap,
+    ProjectSchema,
+    ProjectSchemaType,
+} from "../schemas/projects.schema.ts";
 
 export const ProjectParams = Type.Object({
     projectId: Type.Number(),
 });
 export type ProjectParamsType = Static<typeof ProjectParams>;
-
-export const ProjectData = Type.Object({
-    name: Type.String(),
-    description: Type.String(),
-});
-export type ProjectDataType = Static<typeof ProjectData>;
 
 export default async function routes(
     fastify: FastifyInstance,
@@ -22,21 +24,30 @@ export default async function routes(
 ) {
     await fastify.register(authPlugin);
 
-    fastify.get("/", async (request, reply) => {
-        const projects = await fastify.prisma.project.findMany({
-            where: { ownerId: request.user.sub },
-            include: { tasks: true },
-        });
-
-        reply.status(200);
-        return projects;
-    });
-
-    fastify.post<{ Body: ProjectDataType }>(
+    fastify.get<{ Reply: ProjectSchemaType[] }>(
         "/",
         {
             schema: {
-                body: ProjectData,
+                response: {
+                    200: Type.Array(ProjectSchema),
+                },
+            },
+        },
+        async (request, reply) => {
+            const projectRows = await fastify.prisma.project.findMany({
+                where: { ownerId: request.user.sub },
+            });
+
+            reply.code(200);
+            return projectRows.map(ProjectPrismaMap);
+        },
+    );
+
+    fastify.post<{ Body: ProjectDataSchemaType }>(
+        "/",
+        {
+            schema: {
+                body: ProjectDataSchema,
                 description: "Create new project",
                 response: {},
             },
@@ -51,8 +62,8 @@ export default async function routes(
                 fastify.prisma,
             );
 
-            reply.status(200);
-            return JSON.stringify(project);
+            reply.code(200);
+            return ProjectPrismaMap(project);
         },
     );
 
@@ -72,16 +83,16 @@ export default async function routes(
                 throw new UnauthorizedError("Project does not exist with ID");
             }
 
-            reply.status(400);
-            return JSON.stringify(project);
+            reply.code(400);
+            return ProjectPrismaMap(project);
         },
     );
 
-    fastify.put<{ Body: ProjectDataType; Params: ProjectParamsType }>(
+    fastify.put<{ Body: ProjectDataSchemaType; Params: ProjectParamsType }>(
         "/:projectId",
         {
             schema: {
-                body: ProjectData,
+                body: ProjectDataSchema,
                 params: ProjectParams,
                 description: "Update project data",
             },
@@ -94,8 +105,8 @@ export default async function routes(
                 fastify.prisma,
             );
 
-            reply.status(200);
-            return JSON.stringify(project);
+            reply.code(200);
+            return ProjectPrismaMap(project);
         },
     );
 
@@ -109,7 +120,7 @@ export default async function routes(
                 fastify.prisma,
             );
 
-            reply.status(204);
+            reply.code(204);
             return {};
         },
     );
