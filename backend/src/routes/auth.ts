@@ -4,7 +4,7 @@ import {
     UnauthorizedResponseSchema,
 } from "../utils/error.ts";
 import { FastifyInstance } from "fastify";
-import { Static, Type } from "@sinclair/typebox";
+import { Static, Type } from "typebox";
 import authServices from "../services/auth.services.ts";
 
 export default function routes(fastify: FastifyInstance, _options: object) {
