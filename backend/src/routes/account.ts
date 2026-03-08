@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import authPlugin from "../plugins/auth.plugin.ts";
 import { InvalidCredentialsResponseSchema } from "../utils/error.ts";
-import { Static, Type } from "@sinclair/typebox";
+import { type Static, Type } from "typebox";
 import accountServices from "../services/account.services.ts";
 
 export default async function routes(
