@@ -9,7 +9,7 @@ async function deleteAccount(
     prisma: PrismaClient,
 ) {
     const userRow = await prisma.user.findUnique({
-        where: { id: user.sub, email: user.email, username: user.username },
+        where: { id: user.sub },
     });
 
     if (userRow == null) {
@@ -25,8 +25,6 @@ async function deleteAccount(
     await prisma.user.deleteMany({
         where: {
             id: user.sub,
-            email: user.email,
-            username: user.username,
         },
     });
 }
