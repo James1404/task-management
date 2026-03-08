@@ -10,6 +10,14 @@ export const ProjectDataSchema = Type.Object({
     description: Type.String(),
 });
 
+export type ProjectUpdateSchemaType = Static<typeof ProjectUpdateSchema>;
+export const ProjectUpdateSchema = Type.Partial(
+    Type.Object({
+        name: Type.String(),
+        description: Type.String(),
+    }),
+);
+
 export type ProjectSchemaType = Static<typeof ProjectSchema>;
 export const ProjectSchema = Type.Intersect([
     ProjectDataSchema,
