@@ -9,6 +9,14 @@ async function getAllProjects(user: string, prisma: PrismaClient) {
     return await prisma.project.findMany({ where: { ownerId: user } });
 }
 
+async function getProjectsTasks(
+    user: string,
+    id: number,
+    prisma: PrismaClient,
+) {
+    return await prisma.task.findMany({ where: { projectId: id } });
+}
+
 type Create = Omit<Project, "id" | "ownerId">;
 async function createProject(
     user: string,
@@ -57,6 +65,7 @@ async function deleteProject(user: string, id: number, prisma: PrismaClient) {
 export default {
     getProject,
     getAllProjects,
+    getProjectsTasks,
     createProject,
     updateProject,
     deleteProject,

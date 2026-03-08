@@ -11,7 +11,9 @@ import {
     ProjectPrismaMap,
     ProjectSchema,
     ProjectSchemaType,
+    ProjectUpdateSchema,
 } from "../schemas/projects.schema.ts";
+import { TaskPrismaMap, TaskSchema } from "../schemas/tasks.schema.ts";
 
 export const ProjectParams = Type.Object({
     projectId: Type.Number(),
@@ -43,13 +45,15 @@ export default async function routes(
         },
     );
 
-    fastify.post<{ Body: ProjectDataSchemaType }>(
+    fastify.post<{ Body: ProjectDataSchemaType; Reply: ProjectSchemaType }>(
         "/",
         {
             schema: {
                 body: ProjectDataSchema,
                 description: "Create new project",
-                response: {},
+                response: {
+                    200: ProjectSchema,
+                },
             },
         },
         async (request, reply) => {
@@ -67,9 +71,17 @@ export default async function routes(
         },
     );
 
-    fastify.get<{ Params: ProjectParamsType }>(
+    fastify.get<{ Params: ProjectParamsType; Reply: ProjectSchemaType }>(
         "/:projectId",
-        { schema: { params: ProjectParams, description: "Get project data" } },
+        {
+            schema: {
+                params: ProjectParams,
+                description: "Get project data",
+                response: {
+                    200: ProjectSchema,
+                },
+            },
+        },
         async (request, reply) => {
             const project = await fastify.prisma.project.findUnique({
                 where: {
@@ -88,13 +100,39 @@ export default async function routes(
         },
     );
 
-    fastify.put<{ Body: ProjectDataSchemaType; Params: ProjectParamsType }>(
+    fastify.get<{ Params: ProjectParamsType }>(
+        "/:projectId/tasks",
+        {
+            schema: {
+                params: ProjectParams,
+                response: { 200: Type.Array(TaskSchema) },
+            },
+        },
+        async (request, reply) => {
+            const taskRows = await projectsServices.getProjectsTasks(
+                request.user.sub,
+                request.params.projectId,
+                fastify.prisma,
+            );
+
+            return taskRows.map(TaskPrismaMap);
+        },
+    );
+
+    fastify.patch<{
+        Body: ProjectDataSchemaType;
+        Params: ProjectParamsType;
+        Reply: ProjectSchemaType;
+    }>(
         "/:projectId",
         {
             schema: {
-                body: ProjectDataSchema,
+                body: ProjectUpdateSchema,
                 params: ProjectParams,
                 description: "Update project data",
+                response: {
+                    200: ProjectSchema,
+                },
             },
         },
         async (request, reply) => {
