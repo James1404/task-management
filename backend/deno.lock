@@ -10,10 +10,9 @@
     "npm:@fastify/rate-limit@^10.3.0": "10.3.0",
     "npm:@fastify/swagger-ui@^5.2.5": "5.2.5",
     "npm:@fastify/swagger@^9.7.0": "9.7.0",
-    "npm:@fastify/type-provider-typebox@^6.1.0": "6.1.0_typebox@1.1.2",
+    "npm:@fastify/type-provider-typebox@^6.1.0": "6.1.0_typebox@1.1.5",
     "npm:@prisma/adapter-pg@^7.4.1": "7.4.1",
     "npm:@prisma/client@^7.4.1": "7.4.1_prisma@7.4.1",
-    "npm:@sinclair/typebox@~0.34.48": "0.34.48",
     "npm:@types/node@^25.3.0": "25.3.0",
     "npm:@types/pg@^8.16.0": "8.16.0",
     "npm:fastify-plugin@^5.1.0": "5.1.0",
@@ -21,6 +20,7 @@
     "npm:pg@^8.18.0": "8.18.0",
     "npm:prisma@*": "7.4.1",
     "npm:prisma@^7.4.1": "7.4.1",
+    "npm:typebox@^1.1.5": "1.1.5",
     "npm:uuid@13": "13.0.0",
     "npm:zod@^4.3.6": "4.3.6"
   },
@@ -178,7 +178,7 @@
         "yaml"
       ]
     },
-    "@fastify/type-provider-typebox@6.1.0_typebox@1.1.2": {
+    "@fastify/type-provider-typebox@6.1.0_typebox@1.1.5": {
       "integrity": "sha512-k29cOitDRcZhMXVjtRq0+caKxdWoArz7su+dQWGzGWnFG+fSKhevgiZ7nexHWuXOEEQzgJlh6cptIMu69beaTA==",
       "dependencies": [
         "typebox"
@@ -310,9 +310,6 @@
         "react",
         "react-dom"
       ]
-    },
-    "@sinclair/typebox@0.34.48": {
-      "integrity": "sha512-kKJTNuK3AQOrgjjotVxMrCn1sUJwM76wMszfq1kdU4uYVJjvEWuFQ6HgvLt4Xz3fSmZlTOxJ/Ie13KnIcWQXFA=="
     },
     "@standard-schema/spec@1.1.0": {
       "integrity": "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="
@@ -1012,8 +1009,8 @@
     "toidentifier@1.0.1": {
       "integrity": "sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA=="
     },
-    "typebox@1.1.2": {
-      "integrity": "sha512-dPDvCF/GJXerjbPU1xR1gUkKhChNKErB2eMgiQNVGlFl+k+LF7q1ERez3HxOKg63182o3TJ3eHvBjqcuhupg4g=="
+    "typebox@1.1.5": {
+      "integrity": "sha512-TBdiM4mSppvWdmRDK5PoocxrMOqGIU9TxmS9zdHH+k8S/+2SIaNlPfMlx3f6hISxma14t2yX7SRySg7+TYYT9w=="
     },
     "undici-types@7.18.2": {
       "integrity": "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w=="
@@ -1063,13 +1060,13 @@
       "npm:@fastify/type-provider-typebox@^6.1.0",
       "npm:@prisma/adapter-pg@^7.4.1",
       "npm:@prisma/client@^7.4.1",
-      "npm:@sinclair/typebox@~0.34.48",
       "npm:@types/node@^25.3.0",
       "npm:@types/pg@^8.16.0",
       "npm:fastify-plugin@^5.1.0",
       "npm:fastify@^5.7.4",
       "npm:pg@^8.18.0",
       "npm:prisma@^7.4.1",
+      "npm:typebox@^1.1.5",
       "npm:uuid@13",
       "npm:zod@^4.3.6"
     ]
