@@ -1,8 +1,12 @@
 import { FastifyInstance } from "fastify";
 import authPlugin from "../plugins/auth.plugin.ts";
-import { Static, Type } from "@sinclair/typebox";
+import { Static, Type } from "typebox";
 import { Status } from "../../generated/prisma/enums.ts";
 import taskServices from "../services/tasks.services.ts";
+import {
+    TaskUpdateSchema,
+    TaskUpdateSchemaType,
+} from "../schemas/tasks.schema.ts";
 
 const TaskIdQuery = Type.Object({
     taskId: Type.Number(),
@@ -50,18 +54,11 @@ export default async function routes(
         },
     );
 
-    const UpdateBody = Type.Object({
-        title: Type.Optional(Type.String()),
-        description: Type.Optional(Type.String()),
-        status: Type.Optional(Type.Enum(Status)),
-    });
-    type PutBodyType = Static<typeof UpdateBody>;
-
-    fastify.put<{ Body: PutBodyType; Querystring: TaskIdQueryType }>(
+    fastify.patch<{ Body: TaskUpdateSchemaType; Querystring: TaskIdQueryType }>(
         "/",
         {
             schema: {
-                body: UpdateBody,
+                body: TaskUpdateSchema,
                 querystring: TaskIdQuery,
                 description: "Update a task",
             },
