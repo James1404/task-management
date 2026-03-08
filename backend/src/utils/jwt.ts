@@ -50,6 +50,10 @@ export function decode(token: string): JWT | null {
 
         const signature = genSignature(headerbuf, payloadbuf);
 
+        if (signature != signaturebuf) {
+            return null;
+        }
+
         const header = JSON.parse(
             Buffer.from(headerbuf, "base64url").toString("utf-8"),
         );
@@ -57,10 +61,6 @@ export function decode(token: string): JWT | null {
         const payload = JSON.parse(
             Buffer.from(payloadbuf, "base64url").toString("utf-8"),
         );
-
-        if (signature != signaturebuf) {
-            return null;
-        }
 
         return { header, payload };
     } catch {
