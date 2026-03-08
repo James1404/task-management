@@ -1,6 +1,4 @@
-import { createHash, randomBytes, scryptSync } from "node:crypto";
 import { Prisma } from "../../generated/prisma/browser.ts";
-import { encode } from "../utils/jwt.ts";
 import { v4 as uuidv4 } from "uuid";
 import { InvalidCredentialsError, UnauthorizedError } from "../utils/error.ts";
 import { PrismaClient } from "../../generated/prisma/client.ts";
@@ -63,8 +61,6 @@ async function register(details: Register, prisma: PrismaClient) {
     const refresh = await issueRefreshToken(user.id, prisma);
     const access = createAccessToken({
         sub: user.id,
-        username: user.username,
-        email: user.email,
         role: user.role,
     });
 
@@ -97,8 +93,6 @@ async function login(details: Login, prisma: PrismaClient) {
     const refresh = await issueRefreshToken(user.id, prisma);
     const access = createAccessToken({
         sub: user.id,
-        username: user.username,
-        email: user.email,
         role: user.role,
     });
 
@@ -212,8 +206,6 @@ async function refresh(details: Refresh, prisma: PrismaClient) {
 
     const access = createAccessToken({
         sub: user.id,
-        username: user.username,
-        email: user.email,
         role: user.role,
     });
 

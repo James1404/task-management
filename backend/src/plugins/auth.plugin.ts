@@ -1,7 +1,7 @@
 import fp from "fastify-plugin";
 import { FastifyPluginAsync } from "fastify";
 import { decode } from "../utils/jwt.ts";
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 import { Role } from "../../generated/prisma/enums.ts";
 import { UnauthorizedError } from "../utils/error.ts";
 
@@ -22,8 +22,6 @@ const ForbiddenResponseSchema = Type.Object({
 export interface User {
     sub: string;
     role: Role;
-    username: string;
-    email: string;
 }
 
 const authPlugin: FastifyPluginAsync = fp(async (server, _options) => {
