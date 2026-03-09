@@ -4,6 +4,11 @@ import { Static, Type } from "typebox";
 import { Status } from "../../generated/prisma/enums.ts";
 import taskServices from "../services/tasks.services.ts";
 import {
+    TaskDataSchema,
+    TaskDataSchemaType,
+    TaskFullSchema,
+    TaskFullSchemaType,
+    TaskPrismaMap,
     TaskUpdateSchema,
     TaskUpdateSchemaType,
 } from "../schemas/tasks.schema.ts";
@@ -33,45 +38,30 @@ export default async function routes(
         },
     );
 
-    const PostBody = Type.Object({
-        projectId: Type.Number(),
-        title: Type.String(),
-        description: Type.Optional(Type.String()),
-        status: Type.Enum(Status, { default: Status.TODO }),
-    });
-    type PostBodyType = Static<typeof PostBody>;
-
-    fastify.post<{ Body: PostBodyType }>(
-        "/",
-        { schema: { body: PostBody } },
-        async (request, _reply) => {
-            const task = await taskServices.createTask(
-                { user: request.user, ...request.body },
-                fastify.prisma,
-            );
-
-            return { id: task.id };
-        },
-    );
-
-    fastify.patch<{ Body: TaskUpdateSchemaType; Querystring: TaskIdQueryType }>(
+    fastify.patch<{
+        Body: TaskUpdateSchemaType;
+        Querystring: TaskIdQueryType;
+        Reply: TaskFullSchemaType;
+    }>(
         "/",
         {
             schema: {
                 body: TaskUpdateSchema,
                 querystring: TaskIdQuery,
+                response: { 200: TaskFullSchema },
                 description: "Update a task",
             },
         },
         async (request, reply) => {
-            await taskServices.updateTask(
+            const task = await taskServices.updateTask(
                 request.user,
                 request.query.taskId,
                 request.body,
                 fastify.prisma,
             );
 
-            return reply.code(204).send();
+            reply.code(200);
+            return TaskPrismaMap(task);
         },
     );
 
