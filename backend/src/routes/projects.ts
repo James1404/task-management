@@ -13,7 +13,14 @@ import {
     ProjectSchemaType,
     ProjectUpdateSchema,
 } from "../schemas/projects.schema.ts";
-import { TaskPrismaMap, TaskSchema } from "../schemas/tasks.schema.ts";
+import {
+    TaskDataSchema,
+    TaskDataSchemaType,
+    TaskFullSchema,
+    TaskFullSchemaType,
+    TaskPrismaMap,
+} from "../schemas/tasks.schema.ts";
+import tasksServices from "../services/tasks.services.ts";
 
 export const ProjectParams = Type.Object({
     projectId: Type.Number(),
@@ -100,12 +107,13 @@ export default async function routes(
         },
     );
 
-    fastify.get<{ Params: ProjectParamsType }>(
+    fastify.get<{ Params: ProjectParamsType; Reply: TaskFullSchemaType[] }>(
         "/:projectId/tasks",
         {
             schema: {
                 params: ProjectParams,
-                response: { 200: Type.Array(TaskSchema) },
+                response: { 200: Type.Array(TaskFullSchema) },
+                description: "Get all tasks related to said project",
             },
         },
         async (request, reply) => {
@@ -116,6 +124,28 @@ export default async function routes(
             );
 
             return taskRows.map(TaskPrismaMap);
+        },
+    );
+
+    fastify.post<{ Params: ProjectParamsType; Body: TaskDataSchemaType }>(
+        "/:projectId/tasks",
+        {
+            schema: {
+                params: ProjectParams,
+                body: TaskDataSchema,
+                response: { 200: TaskFullSchema },
+                description: "Create a new task for said project",
+            },
+        },
+        async (request, reply) => {
+            const task = await tasksServices.createTask(
+                request.user,
+                request.params.projectId,
+                { ...request.body },
+                fastify.prisma,
+            );
+
+            return task;
         },
     );
 

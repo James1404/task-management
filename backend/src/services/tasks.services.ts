@@ -38,22 +38,25 @@ async function getTask(id: number, user: User, prisma: PrismaClient) {
 }
 
 interface Create {
-    user: User;
-    projectId: number;
     title: string;
     description?: string;
     status: Status;
 }
 
-async function createTask(details: Create, prisma: PrismaClient) {
-    getProject(details.projectId, details.user, prisma);
+async function createTask(
+    user: User,
+    projectId: number,
+    details: Create,
+    prisma: PrismaClient,
+) {
+    getProject(projectId, user, prisma);
 
     return await prisma.task.create({
         data: {
             title: details.title,
             description: details.description,
             status: details.status,
-            project: { connect: { id: details.projectId } },
+            project: { connect: { id: projectId } },
         },
     });
 }
