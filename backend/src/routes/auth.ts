@@ -4,29 +4,25 @@ import {
     UnauthorizedResponseSchema,
 } from "../utils/error.ts";
 import { FastifyInstance } from "fastify";
-import { Static, Type } from "typebox";
+import { Type } from "typebox";
 import authServices from "../services/auth.services.ts";
+import {
+    AccessTokenSchema,
+    AccessTokenSchemaType,
+    LoginSchema,
+    LoginSchemaType,
+    RegisterSchema,
+    RegisterSchemaType,
+} from "../schemas/auth.schema.ts";
 
 export default function routes(fastify: FastifyInstance, _options: object) {
-    const AccessTokenResponse = Type.Object({
-        access: Type.String(),
-    });
-    type AccessTokenResponseType = Static<typeof AccessTokenResponse>;
-
-    const RegisterBody = Type.Object({
-        email: Type.String({ format: "email" }),
-        password: Type.String(),
-        username: Type.String(),
-    });
-    type RegisterBodyType = Static<typeof RegisterBody>;
-
-    fastify.post<{ Body: RegisterBodyType; Reply: AccessTokenResponseType }>(
+    fastify.post<{ Body: RegisterSchemaType; Reply: AccessTokenSchemaType }>(
         "/register",
         {
             schema: {
-                body: RegisterBody,
+                body: RegisterSchema,
                 response: {
-                    200: AccessTokenResponse,
+                    200: AccessTokenSchema,
                     ...InvalidCredentialsResponseSchema,
                 },
                 description:
@@ -54,19 +50,13 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         },
     );
 
-    const LoginBody = Type.Object({
-        email: Type.String({ format: "email" }),
-        password: Type.String(),
-    });
-    type LoginBodyType = Static<typeof LoginBody>;
-
-    fastify.post<{ Body: LoginBodyType; Reply: AccessTokenResponseType }>(
+    fastify.post<{ Body: LoginSchemaType; Reply: AccessTokenSchemaType }>(
         "/login",
         {
             schema: {
-                body: LoginBody,
+                body: LoginSchema,
                 response: {
-                    200: AccessTokenResponse,
+                    200: AccessTokenSchema,
                     ...InvalidCredentialsResponseSchema,
                 },
                 description:
@@ -156,12 +146,12 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         },
     );
 
-    fastify.post<{ Reply: AccessTokenResponseType }>(
+    fastify.post<{ Reply: AccessTokenSchemaType }>(
         "/refresh",
         {
             schema: {
                 response: {
-                    200: AccessTokenResponse,
+                    200: AccessTokenSchema,
                     ...UnauthorizedResponseSchema,
                 },
                 description: "Refresh your authentication tokens",
