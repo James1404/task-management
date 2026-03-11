@@ -1,8 +1,8 @@
 import { FastifyInstance } from "fastify";
-import authPlugin from "../plugins/auth.plugin.ts";
+import authPlugin from "@/plugins/auth.plugin.ts";
 import { Static, Type } from "typebox";
-import { Status } from "../../generated/prisma/enums.ts";
-import taskServices from "../services/tasks.services.ts";
+import { Status } from "../../../generated/prisma/enums.ts";
+import taskServices from "@/services/tasks.services.ts";
 import {
     TaskDataSchema,
     TaskDataSchemaType,
@@ -11,7 +11,7 @@ import {
     TaskPrismaMap,
     TaskUpdateSchema,
     TaskUpdateSchemaType,
-} from "../schemas/tasks.schema.ts";
+} from "../../schemas/tasks.schema.ts";
 
 const TaskIdQuery = Type.Object({
     taskId: Type.Number(),

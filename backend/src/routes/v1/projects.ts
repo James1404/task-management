@@ -1,10 +1,10 @@
-import { UnauthorizedError } from "../utils/error.ts";
+import { UnauthorizedError } from "@/utils/error.ts";
 import { FastifyInstance } from "fastify";
 
 import { Type, Static } from "typebox";
 
-import authPlugin from "../plugins/auth.plugin.ts";
-import projectsServices from "../services/projects.services.ts";
+import authPlugin from "@/plugins/auth.plugin.ts";
+import projectsServices from "@/services/projects.services.ts";
 import {
     ProjectDataSchema,
     ProjectDataSchemaType,
@@ -12,15 +12,15 @@ import {
     ProjectSchema,
     ProjectSchemaType,
     ProjectUpdateSchema,
-} from "../schemas/projects.schema.ts";
+} from "@/schemas/projects.schema.ts";
 import {
     TaskDataSchema,
     TaskDataSchemaType,
     TaskFullSchema,
     TaskFullSchemaType,
     TaskPrismaMap,
-} from "../schemas/tasks.schema.ts";
-import tasksServices from "../services/tasks.services.ts";
+} from "@/schemas/tasks.schema.ts";
+import tasksServices from "@/services/tasks.services.ts";
 
 export const ProjectParams = Type.Object({
     projectId: Type.Number(),

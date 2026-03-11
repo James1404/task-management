@@ -1,10 +1,8 @@
 import "@std/dotenv/load";
 
 import Fastify from "fastify";
+import fp from "fastify-plugin";
 
-import authentication from "./routes/auth.ts";
-import tasks from "./routes/tasks.ts";
-import projects from "./routes/projects.ts";
 import process from "node:process";
 import prismaPlugin from "./plugins/prisma.ts";
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
@@ -12,8 +10,7 @@ import swagger from "@fastify/swagger";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import { AppError } from "./utils/error.ts";
-import health from "./routes/health.ts";
-import account from "./routes/account.ts";
+import routesPlugin from "@/plugins/routes.plugin.ts";
 
 const fastify = Fastify({
     logger: true,
@@ -104,11 +101,14 @@ fastify.setErrorHandler((error, _request, reply) => {
     throw error;
 });
 
-await fastify.register(health, { prefix: "/health" });
-await fastify.register(authentication, { prefix: "/auth" });
-await fastify.register(account, { prefix: "/account" });
-await fastify.register(projects, { prefix: "/projects" });
-await fastify.register(tasks, { prefix: "/tasks" });
+await fastify.register(
+    fp(
+        async (server, _options) => {
+            await server.register(routesPlugin, { prefix: "/v1" });
+        },
+        { name: "api-v1" },
+    ),
+);
 
 fastify.get(
     "/",

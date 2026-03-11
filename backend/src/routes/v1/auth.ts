@@ -2,10 +2,10 @@ import {
     InvalidCredentialsResponseSchema,
     UnauthorizedError,
     UnauthorizedResponseSchema,
-} from "../utils/error.ts";
+} from "@/utils/error.ts";
 import { FastifyInstance } from "fastify";
 import { Type } from "typebox";
-import authServices from "../services/auth.services.ts";
+import authServices from "@/services/auth.services.ts";
 import {
     AccessTokenSchema,
     AccessTokenSchemaType,
@@ -13,7 +13,7 @@ import {
     LoginSchemaType,
     RegisterSchema,
     RegisterSchemaType,
-} from "../schemas/auth.schema.ts";
+} from "@/schemas/auth.schema.ts";
 
 export default function routes(fastify: FastifyInstance, _options: object) {
     fastify.post<{ Body: RegisterSchemaType; Reply: AccessTokenSchemaType }>(
