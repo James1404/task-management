@@ -1,8 +1,19 @@
 import LoginField from "@/components/login-field";
-import { createFileRoute } from "@tanstack/react-router";
+import { loggedIn } from "@/stores/credentials";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
     component: Index,
+    async beforeLoad() {
+        if (loggedIn()) {
+            throw redirect({
+                to: "/dashboard",
+                // search: {
+                //     redirect: location.href,
+                // },
+            });
+        }
+    },
 });
 
 function Index() {
