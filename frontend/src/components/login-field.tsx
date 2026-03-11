@@ -1,16 +1,7 @@
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "./ui/card";
-import z from "zod";
+import { Card, CardContent } from "./ui/card";
 import { useNavigate } from "@tanstack/react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
-import client from "@/libs/fetch";
-import { setAccess } from "@/stores/credentials";
 import {
     Field,
     FieldDescription,
@@ -23,32 +14,35 @@ import {
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-
-const loginSchema = z.object({
-    email: z.email(),
-    password: z.string(),
-});
-type LoginSchemaType = z.infer<typeof loginSchema>;
+import {
+    LoginSchema,
+    RegisterSchema,
+    type LoginSchemaType,
+    type RegisterSchemaType,
+} from "@/schemas/user.schema";
+import { loginToUser, registerAccount } from "@/api/user";
 
 function LoginForm() {
     const navigate = useNavigate({});
 
-    const { handleSubmit, control } = useForm<LoginSchemaType>({
-        resolver: zodResolver(loginSchema),
+    const {
+        handleSubmit,
+        control,
+        setError,
+        formState: { errors },
+    } = useForm<LoginSchemaType>({
+        resolver: zodResolver(LoginSchema),
     });
 
     const onSubmit: SubmitHandler<LoginSchemaType> = async formData => {
-        const { data } = await client.POST("/auth/login", {
-            body: {
-                email: formData.email,
-                password: formData.password,
-            },
-            credentials: "include",
-        });
-
-        if (data) {
-            setAccess(data.access);
+        try {
+            await loginToUser(formData);
             navigate({ to: "/dashboard" });
+        } catch (err) {
+            setError("root", {
+                type: "custom",
+                message: (err as Error).message,
+            });
         }
     };
 
@@ -111,6 +105,8 @@ function LoginForm() {
                             )}
                         />
 
+                        {errors.root?.message && <p>Error</p>}
+
                         <Button type="submit">Login</Button>
                     </FieldGroup>
                 </FieldSet>
@@ -119,28 +115,28 @@ function LoginForm() {
     );
 }
 
-const registerSchema = z
-    .object({
-        email: z.email(),
-        username: z.string(),
-        password: z.string(),
-        confirm_password: z.string(),
-    })
-    .refine(data => data.password === data.confirm_password, {
-        error: "Passwords don't match",
-        path: ["confirm_password"],
-    });
-type RegisterSchemaType = z.infer<typeof registerSchema>;
-
 function RegisterForm() {
     const navigate = useNavigate({});
 
-    const { handleSubmit, control } = useForm<RegisterSchemaType>({
-        resolver: zodResolver(registerSchema),
+    const {
+        handleSubmit,
+        control,
+        formState: { errors },
+        setError,
+    } = useForm<RegisterSchemaType>({
+        resolver: zodResolver(RegisterSchema),
     });
 
     const onSubmit: SubmitHandler<RegisterSchemaType> = async formData => {
-        // navigate({ to: "/dashboard" });
+        try {
+            await registerAccount(formData);
+            navigate({ to: "/dashboard" });
+        } catch (err) {
+            setError("root", {
+                type: "custom",
+                message: (err as Error).message,
+            });
+        }
     };
 
     return (
