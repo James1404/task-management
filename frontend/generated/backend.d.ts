@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/health/": {
+    "/v1/health/": {
         parameters: {
             query?: never;
             header?: never;
@@ -37,7 +37,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/health/ready": {
+    "/v1/health/ready": {
         parameters: {
             query?: never;
             header?: never;
@@ -70,7 +70,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/register": {
+    "/v1/auth/register": {
         parameters: {
             query?: never;
             header?: never;
@@ -92,8 +92,9 @@ export interface paths {
                     "application/json": {
                         /** Format: email */
                         email: string;
-                        password: string;
                         username: string;
+                        password: string;
+                        confirm_password: string;
                     };
                 };
             };
@@ -128,7 +129,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/login": {
+    "/v1/auth/login": {
         parameters: {
             query?: never;
             header?: never;
@@ -185,7 +186,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/logout": {
+    "/v1/auth/logout": {
         parameters: {
             query?: never;
             header?: never;
@@ -232,7 +233,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/logoutAll": {
+    "/v1/auth/logoutAll": {
         parameters: {
             query?: never;
             header?: never;
@@ -279,7 +280,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/refresh": {
+    "/v1/auth/refresh": {
         parameters: {
             query?: never;
             header?: never;
@@ -328,7 +329,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/account/delete": {
+    "/v1/account/delete": {
         parameters: {
             query?: never;
             header?: never;
@@ -392,7 +393,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/": {
+    "/v1/projects/": {
         parameters: {
             query?: never;
             header?: never;
@@ -508,7 +509,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/projects/{projectId}": {
+    "/v1/projects/{projectId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -565,8 +566,13 @@ export interface paths {
                 };
             };
         };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
         /** @description Update project data */
-        put: {
+        patch: {
             parameters: {
                 query?: never;
                 header?: never;
@@ -578,8 +584,8 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
-                        name: string;
-                        description: string;
+                        name?: string;
+                        description?: string;
                     };
                 };
             };
@@ -622,14 +628,138 @@ export interface paths {
                 };
             };
         };
-        post?: never;
+        trace?: never;
+    };
+    "/v1/projects/{projectId}/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get all tasks related to said project */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    projectId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": ({
+                            description?: string;
+                            title: string;
+                            /** @enum {unknown} */
+                            status: "TODO" | "IN_PROGRESS" | "DONE";
+                        } & {
+                            id: number;
+                            projectId: number;
+                        })[];
+                    };
+                };
+                /** @description Authentication failed or missing token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+                /** @description User does not have permission */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description Create a new task for said project */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    projectId: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        description?: string;
+                        title: string;
+                        /** @enum {unknown} */
+                        status: "TODO" | "IN_PROGRESS" | "DONE";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            description?: string;
+                            title: string;
+                            /** @enum {unknown} */
+                            status: "TODO" | "IN_PROGRESS" | "DONE";
+                        } & {
+                            id: number;
+                            projectId: number;
+                        };
+                    };
+                };
+                /** @description Authentication failed or missing token */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+                /** @description User does not have permission */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: string;
+                        };
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/projects/delete/{projectId}": {
+    "/v1/projects/delete/{projectId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -680,7 +810,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/tasks/": {
+    "/v1/tasks/": {
         parameters: {
             query?: never;
             header?: never;
@@ -722,8 +852,13 @@ export interface paths {
                 };
             };
         };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
         /** @description Update a task */
-        put: {
+        patch: {
             parameters: {
                 query: {
                     taskId: number;
@@ -735,14 +870,31 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
-                        title?: string;
                         description?: string;
+                        title?: string;
                         /** @enum {unknown} */
                         status?: "TODO" | "IN_PROGRESS" | "DONE";
                     };
                 };
             };
             responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            description?: string;
+                            title: string;
+                            /** @enum {unknown} */
+                            status: "TODO" | "IN_PROGRESS" | "DONE";
+                        } & {
+                            id: number;
+                            projectId: number;
+                        };
+                    };
+                };
                 /** @description Authentication failed or missing token */
                 401: {
                     headers: {
@@ -767,59 +919,9 @@ export interface paths {
                 };
             };
         };
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        projectId: number;
-                        title: string;
-                        description?: string;
-                        /**
-                         * @default TODO
-                         * @enum {unknown}
-                         */
-                        status: "TODO" | "IN_PROGRESS" | "DONE";
-                    };
-                };
-            };
-            responses: {
-                /** @description Authentication failed or missing token */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            error: string;
-                        };
-                    };
-                };
-                /** @description User does not have permission */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            error: string;
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
-    "/tasks/delete": {
+    "/v1/tasks/delete": {
         parameters: {
             query?: never;
             header?: never;

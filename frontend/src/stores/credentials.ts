@@ -7,7 +7,7 @@ interface Credentials {
 
 const useCredentials = create<Credentials>()(
     persist(
-        _ => ({
+        _set => ({
             access: null,
         }),
         { name: "credentials" },
@@ -15,11 +15,11 @@ const useCredentials = create<Credentials>()(
 );
 
 export function setAccess(newAccess: string) {
-    useCredentials.setState(_ => ({ access: newAccess }));
+    useCredentials.setState(() => ({ access: newAccess }));
 }
 
 export function clearAccess() {
-    return useCredentials.setState(_ => ({ access: null }));
+    return useCredentials.setState(() => ({ access: null }));
 }
 
 export function getAuthorizationHeader() {
