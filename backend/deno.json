@@ -9,6 +9,7 @@
         "db:deploy": "deno run -A npm:prisma migrate deploy && deno run -A npm:prisma generate"
     },
     "imports": {
+        "@/": "./src/",
         "@fastify/cookie": "npm:@fastify/cookie@^11.0.2",
         "@fastify/cors": "npm:@fastify/cors@^11.2.0",
         "@fastify/rate-limit": "npm:@fastify/rate-limit@^10.3.0",
