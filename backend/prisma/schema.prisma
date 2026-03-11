@@ -24,7 +24,7 @@ model User {
     email String @unique
     role  Role   @default(USER)
 
-    username String @default("Null")
+    nickname String @default("Null")
 
     password String
     salt     String
