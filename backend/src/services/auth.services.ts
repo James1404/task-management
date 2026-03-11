@@ -34,7 +34,7 @@ async function issueRefreshToken(
 interface Register {
     email: string;
     password: string;
-    username: string;
+    nickname: string;
 }
 
 async function register(details: Register, prisma: PrismaClient) {
@@ -54,7 +54,7 @@ async function register(details: Register, prisma: PrismaClient) {
             email: details.email,
             password: hash,
             salt: salt,
-            username: details.username,
+            nickname: details.nickname,
         },
     });
 
@@ -137,7 +137,7 @@ async function logout(user: User, refresh: string, prisma: PrismaClient) {
     // const refresh = await issueRefreshToken(user.id, prisma);
     // const access = createAccessToken({
     //     sub: user.id,
-    //     username: user.username,
+    //     nickname: user.nickname,
     //     email: user.email,
     //     role: user.role,
     // });
