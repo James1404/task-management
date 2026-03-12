@@ -9,18 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as Old_dashboardRouteImport } from './routes/old_dashboard'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardProjectIdRouteImport } from './routes/dashboard/$projectId'
 
-const Old_dashboardRoute = Old_dashboardRouteImport.update({
-  id: '/old_dashboard',
-  path: '/old_dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -51,14 +45,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/about': typeof AboutRoute
-  '/old_dashboard': typeof Old_dashboardRoute
   '/dashboard/$projectId': typeof DashboardProjectIdRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/old_dashboard': typeof Old_dashboardRoute
   '/dashboard/$projectId': typeof DashboardProjectIdRoute
   '/dashboard': typeof DashboardIndexRoute
 }
@@ -67,7 +59,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/about': typeof AboutRoute
-  '/old_dashboard': typeof Old_dashboardRoute
   '/dashboard/$projectId': typeof DashboardProjectIdRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
@@ -77,17 +68,15 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/about'
-    | '/old_dashboard'
     | '/dashboard/$projectId'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/old_dashboard' | '/dashboard/$projectId' | '/dashboard'
+  to: '/' | '/about' | '/dashboard/$projectId' | '/dashboard'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
     | '/about'
-    | '/old_dashboard'
     | '/dashboard/$projectId'
     | '/dashboard/'
   fileRoutesById: FileRoutesById
@@ -96,18 +85,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
-  Old_dashboardRoute: typeof Old_dashboardRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/old_dashboard': {
-      id: '/old_dashboard'
-      path: '/old_dashboard'
-      fullPath: '/old_dashboard'
-      preLoaderRoute: typeof Old_dashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -164,7 +145,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
   AboutRoute: AboutRoute,
-  Old_dashboardRoute: Old_dashboardRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
