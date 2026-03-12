@@ -8,7 +8,7 @@ async function refresh() {
         credentials: "include",
     });
 
-    if (error || data == undefined) {
+    if (error || !data) {
         return response;
     }
 
@@ -35,6 +35,10 @@ const authMiddleware: Middleware = {
 
         if (status === 401 && !NonAuthPaths.includes(schemaPath)) {
             await refresh();
+
+            const retryRequest = new Request(request);
+            request.headers.set("Authorization", getAuthorizationHeader());
+            return fetch(retryRequest);
         }
 
         return new Response(body, { ...resOptions });
@@ -42,9 +46,6 @@ const authMiddleware: Middleware = {
 };
 
 const client = createClient<paths>({ baseUrl: "http://localhost:3000" });
-// const client = createPathBasedClient<paths>({
-//     baseUrl: "http://localhost:3000",
-// });
 
 client.use(authMiddleware);
 
