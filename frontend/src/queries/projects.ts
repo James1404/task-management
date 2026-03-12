@@ -8,9 +8,9 @@ import {
 
 export function currentProjectOptions(projectId: number) {
     return queryOptions({
-        queryKey: ["currentProject"],
+        queryKey: ["currentProject", projectId],
         queryFn: async () => getProject(projectId),
-        staleTime: 600000,
+        staleTime: 2 * 60 * 1000,
     });
 }
 
