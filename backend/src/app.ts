@@ -12,8 +12,22 @@ import cookie from "@fastify/cookie";
 import { AppError } from "./utils/error.ts";
 import routesPlugin from "@/plugins/routes.plugin.ts";
 
+const envToLogger = {
+    development: {
+        transport: {
+            target: "pino-pretty",
+            options: {
+                translateTime: "HH:MM:ss Z",
+                ignore: "pid,hostname",
+            },
+        },
+    },
+    production: true,
+    test: false,
+};
+
 const fastify = Fastify({
-    logger: true,
+    logger: envToLogger.production,
 }).withTypeProvider<TypeBoxTypeProvider>();
 
 const PORT = 3000;
