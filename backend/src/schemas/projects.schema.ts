@@ -2,7 +2,10 @@ import Type, { Static } from "typebox";
 import { Prisma } from "../../generated/prisma/browser.ts";
 import { Project as PrismaProject } from "../../generated/prisma/client.ts";
 
-type Mapping<B, E> = (from: B) => E;
+export const ProjectParams = Type.Object({
+    projectId: Type.String(),
+});
+export type ProjectParamsType = Static<typeof ProjectParams>;
 
 export type ProjectDataSchemaType = Static<typeof ProjectDataSchema>;
 export const ProjectDataSchema = Type.Object({
@@ -22,17 +25,14 @@ export type ProjectSchemaType = Static<typeof ProjectSchema>;
 export const ProjectSchema = Type.Intersect([
     ProjectDataSchema,
     Type.Object({
-        id: Type.Integer(),
+        id: Type.String(),
     }),
 ]);
 
-export const ProjectPrismaMap: Mapping<
-    PrismaProject,
-    ProjectSchemaType
-> = from => {
+export function ProjectPrismaMap(from: PrismaProject): ProjectSchemaType {
     return {
         id: from.id,
         name: from.name,
         description: from.description,
     };
-};
+}
