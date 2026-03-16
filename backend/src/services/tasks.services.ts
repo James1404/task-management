@@ -1,38 +1,19 @@
 import { PrismaClient, Task } from "../../generated/prisma/client.ts";
-import { Status } from "../../generated/prisma/enums.ts";
 import { User } from "../plugins/auth.plugin.ts";
+import columnServices from "@/services/columns.services.ts";
 import { ForbiddenError, NotFoundError } from "../utils/error.ts";
-
-async function getProject(id: number, user: User, prisma: PrismaClient) {
-    const project = await prisma.project.findUnique({
-        where: { id },
-        include: {
-            tasks: true,
-        },
-    });
-
-    if (project == null) {
-        throw new NotFoundError("Project not found");
-    }
-
-    if (project.ownerId != user.sub) {
-        throw new ForbiddenError();
-    }
-
-    return project;
-}
 
 async function getTask(id: number, user: User, prisma: PrismaClient) {
     const task = await prisma.task.findUnique({
         where: { id },
-        include: { project: true },
+        include: { column: true },
     });
 
     if (task == null) {
         throw new NotFoundError("Task not found");
     }
 
-    await getProject(task.projectId, user, prisma);
+    await columnServices.getColumn(user, task.columnId, prisma);
 
     return task;
 }
@@ -40,23 +21,21 @@ async function getTask(id: number, user: User, prisma: PrismaClient) {
 interface Create {
     title: string;
     description?: string;
-    status: Status;
 }
 
 async function createTask(
     user: User,
-    projectId: number,
+    columnId: string,
     details: Create,
     prisma: PrismaClient,
 ) {
-    getProject(projectId, user, prisma);
+    await columnServices.getColumn(user, columnId, prisma);
 
     return await prisma.task.create({
         data: {
             title: details.title,
             description: details.description,
-            status: details.status,
-            project: { connect: { id: projectId } },
+            column: { connect: { id: columnId } },
         },
     });
 }
@@ -71,7 +50,7 @@ async function updateTask(
 ) {
     // KNOWLEDGE: Updating fields to "undefined" doesnt change them.
     return await prisma.task.update({
-        where: { id: taskId, project: { ownerId: user.sub } },
+        where: { id: taskId, column: { project: { ownerId: user.sub } } },
         data: { ...details },
     });
 }
@@ -80,7 +59,9 @@ async function deleteTask(user: User, taskId: number, prisma: PrismaClient) {
     const task = await prisma.task.findUnique({
         where: { id: taskId },
         include: {
-            project: true,
+            column: {
+                include: { project: true },
+            },
         },
     });
 
@@ -88,7 +69,7 @@ async function deleteTask(user: User, taskId: number, prisma: PrismaClient) {
         throw new NotFoundError("Task not found");
     }
 
-    if (task.project.ownerId != user.sub) {
+    if (task.column.project.ownerId != user.sub) {
         throw new ForbiddenError();
     }
 

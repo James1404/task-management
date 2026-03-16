@@ -1,31 +1,29 @@
 import { UnauthorizedError } from "@/utils/error.ts";
 import { FastifyInstance } from "fastify";
 
-import { Type, Static } from "typebox";
+import { Type } from "typebox";
 
 import authPlugin from "@/plugins/auth.plugin.ts";
 import projectsServices from "@/services/projects.services.ts";
 import {
     ProjectDataSchema,
     ProjectDataSchemaType,
+    ProjectParams,
+    ProjectParamsType,
     ProjectPrismaMap,
     ProjectSchema,
     ProjectSchemaType,
     ProjectUpdateSchema,
+    ProjectUpdateSchemaType,
 } from "@/schemas/projects.schema.ts";
 import {
-    TaskDataSchema,
-    TaskDataSchemaType,
-    TaskFullSchema,
-    TaskFullSchemaType,
-    TaskPrismaMap,
-} from "@/schemas/tasks.schema.ts";
-import tasksServices from "@/services/tasks.services.ts";
-
-export const ProjectParams = Type.Object({
-    projectId: Type.Number(),
-});
-export type ProjectParamsType = Static<typeof ProjectParams>;
+    ColumnDataSchema,
+    ColumnDataSchemaType,
+    ColumnFullSchema,
+    ColumnFullSchemaType,
+    ColumnPrismaMap,
+} from "@/schemas/column.schema.ts";
+import columnsServices from "@/services/columns.services.ts";
 
 export default async function routes(
     fastify: FastifyInstance,
@@ -63,9 +61,9 @@ export default async function routes(
                 },
             },
         },
-        async (request, reply) => {
+        async (request, _reply) => {
             const project = await projectsServices.createProject(
-                request.user.sub,
+                request.user,
                 {
                     name: request.body.name,
                     description: request.body.description,
@@ -73,7 +71,6 @@ export default async function routes(
                 fastify.prisma,
             );
 
-            reply.code(200);
             return ProjectPrismaMap(project);
         },
     );
@@ -89,68 +86,71 @@ export default async function routes(
                 },
             },
         },
-        async (request, reply) => {
+        async (request, _reply) => {
             const project = await fastify.prisma.project.findUnique({
                 where: {
                     id: request.params.projectId,
                     ownerId: request.user.sub,
                 },
-                include: { tasks: true },
+                include: { columns: true },
             });
 
             if (project == null) {
                 throw new UnauthorizedError("Project does not exist with ID");
             }
 
-            reply.code(400);
             return ProjectPrismaMap(project);
         },
     );
 
-    fastify.get<{ Params: ProjectParamsType; Reply: TaskFullSchemaType[] }>(
-        "/:projectId/tasks",
+    fastify.get<{ Params: ProjectParamsType; Reply: ColumnFullSchemaType[] }>(
+        "/:projectId/columns",
         {
             schema: {
                 params: ProjectParams,
-                response: { 200: Type.Array(TaskFullSchema) },
-                description: "Get all tasks related to said project",
+                response: { 200: Type.Array(ColumnFullSchema) },
+                description: "Get all columns related to said project",
             },
         },
-        async (request, reply) => {
-            const taskRows = await projectsServices.getProjectsTasks(
-                request.user.sub,
+        async (request, _reply) => {
+            const columns = await projectsServices.getProjectsColumns(
+                request.user,
                 request.params.projectId,
                 fastify.prisma,
             );
 
-            return taskRows.map(TaskPrismaMap);
+            return columns.map(ColumnPrismaMap);
         },
     );
 
-    fastify.post<{ Params: ProjectParamsType; Body: TaskDataSchemaType }>(
-        "/:projectId/tasks",
+    fastify.post<{
+        Params: ProjectParamsType;
+        Body: ColumnDataSchemaType;
+        Reply: ColumnFullSchemaType;
+    }>(
+        "/:projectId/columns",
         {
             schema: {
                 params: ProjectParams,
-                body: TaskDataSchema,
-                response: { 200: TaskFullSchema },
-                description: "Create a new task for said project",
+                body: ColumnDataSchema,
+                response: { 200: ColumnFullSchema },
+                description: "Create a new column for said project",
             },
         },
-        async (request, reply) => {
-            const task = await tasksServices.createTask(
+        async (request, _reply) => {
+            const column = await columnsServices.createColumn(
                 request.user,
                 request.params.projectId,
-                { ...request.body },
+                request.body,
                 fastify.prisma,
             );
 
-            return task;
+            return column;
         },
     );
 
     fastify.patch<{
-        Body: ProjectDataSchemaType;
+        Body: ProjectUpdateSchemaType;
         Params: ProjectParamsType;
         Reply: ProjectSchemaType;
     }>(
@@ -165,31 +165,29 @@ export default async function routes(
                 },
             },
         },
-        async (request, reply) => {
+        async (request, _reply) => {
             const project = await projectsServices.updateProject(
-                request.user.sub,
+                request.user,
                 request.params.projectId,
                 request.body,
                 fastify.prisma,
             );
 
-            reply.code(200);
             return ProjectPrismaMap(project);
         },
     );
 
-    fastify.post<{ Params: ProjectParamsType }>(
-        "/delete/:projectId",
+    fastify.delete<{ Params: ProjectParamsType }>(
+        "/:projectId",
         { schema: { params: ProjectParams, description: "Delete a project" } },
         async (request, reply) => {
             await projectsServices.deleteProject(
-                request.user.sub,
-                Number(request.params.projectId),
+                request.user,
+                request.params.projectId,
                 fastify.prisma,
             );
 
-            reply.code(204);
-            return {};
+            return reply.code(204).send();
         },
     );
 }

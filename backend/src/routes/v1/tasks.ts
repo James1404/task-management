@@ -1,22 +1,16 @@
 import { FastifyInstance } from "fastify";
 import authPlugin from "@/plugins/auth.plugin.ts";
 import { Static, Type } from "typebox";
-import { Status } from "../../../generated/prisma/enums.ts";
 import taskServices from "@/services/tasks.services.ts";
 import {
-    TaskDataSchema,
-    TaskDataSchemaType,
     TaskFullSchema,
     TaskFullSchemaType,
+    TaskParams,
+    TaskParamsType,
     TaskPrismaMap,
     TaskUpdateSchema,
     TaskUpdateSchemaType,
 } from "../../schemas/tasks.schema.ts";
-
-const TaskIdQuery = Type.Object({
-    taskId: Type.Number(),
-});
-type TaskIdQueryType = Static<typeof TaskIdQuery>;
 
 export default async function routes(
     fastify: FastifyInstance,
@@ -24,12 +18,12 @@ export default async function routes(
 ) {
     await fastify.register(authPlugin);
 
-    fastify.get<{ Querystring: TaskIdQueryType }>(
-        "/",
-        { schema: { querystring: TaskIdQuery } },
+    fastify.get<{ Params: TaskParamsType }>(
+        "/:taskId",
+        { schema: { params: TaskParams } },
         async (request, _reply) => {
             const tasks = await taskServices.getTask(
-                request.query.taskId,
+                request.params.taskId,
                 request.user,
                 fastify.prisma,
             );
@@ -40,14 +34,14 @@ export default async function routes(
 
     fastify.patch<{
         Body: TaskUpdateSchemaType;
-        Querystring: TaskIdQueryType;
+        Params: TaskParamsType;
         Reply: TaskFullSchemaType;
     }>(
-        "/",
+        "/:taskId",
         {
             schema: {
                 body: TaskUpdateSchema,
-                querystring: TaskIdQuery,
+                params: TaskParams,
                 response: { 200: TaskFullSchema },
                 description: "Update a task",
             },
@@ -55,7 +49,7 @@ export default async function routes(
         async (request, reply) => {
             const task = await taskServices.updateTask(
                 request.user,
-                request.query.taskId,
+                request.params.taskId,
                 request.body,
                 fastify.prisma,
             );
@@ -65,13 +59,19 @@ export default async function routes(
         },
     );
 
-    fastify.post<{ Querystring: TaskIdQueryType }>(
-        "/delete",
-        { schema: { querystring: TaskIdQuery, description: "Delete a task" } },
+    fastify.delete<{ Params: TaskParamsType }>(
+        "/:taskId",
+        {
+            schema: {
+                params: TaskParams,
+                description: "Delete a task",
+                response: { 204: Type.Object({}) },
+            },
+        },
         async (request, reply) => {
             await taskServices.deleteTask(
                 request.user,
-                request.query.taskId,
+                request.params.taskId,
                 fastify.prisma,
             );
 
