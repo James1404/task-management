@@ -1,4 +1,4 @@
-import { createProjectOptions } from "@/queries/projects";
+import { createProjectOptions } from "@/queries/projects.query";
 import {
     ProjectDataSchema,
     type ProjectDataSchemaType,
@@ -45,7 +45,7 @@ export function CreateProjectDialog({
         setDialogOpen(false);
         navigate({
             to: "/dashboard/$projectId",
-            params: { projectId: project.id.toString() },
+            params: { projectId: project.id },
         });
     };
 

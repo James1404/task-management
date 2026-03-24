@@ -3,7 +3,7 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
-import { logout } from "@/api/user";
+import { logout } from "@/api/user.api";
 
 function RootLayout() {
     const navigate = useNavigate({});

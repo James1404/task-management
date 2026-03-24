@@ -1,4 +1,11 @@
-import { Controller, useForm, type SubmitHandler } from "react-hook-form";
+import {
+    Controller,
+    useForm,
+    useFormState,
+    type Control,
+    type FieldValues,
+    type SubmitHandler,
+} from "react-hook-form";
 import { Card, CardContent } from "./ui/card";
 import { useNavigate } from "@tanstack/react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +27,31 @@ import {
     type LoginSchemaType,
     type RegisterSchemaType,
 } from "@/schemas/user.schema";
-import { loginToUser, registerAccount } from "@/api/user";
+import { loginToUser, registerAccount } from "@/api/user.api";
+import React from "react";
+import { cn } from "@/lib/utils";
+
+function FormRootMessage<T extends FieldValues>({
+    className,
+    control,
+    ...props
+}: React.ComponentProps<"p"> & { control: Control<T> }) {
+    const { errors } = useFormState({ control });
+    const rootError = errors.root;
+    if (!rootError) {
+        return null;
+    }
+
+    return (
+        <p
+            data-slot="form-message"
+            className={cn("text-destructive text-sm", className)}
+            {...props}
+        >
+            {rootError.message}
+        </p>
+    );
+}
 
 function LoginForm() {
     const navigate = useNavigate({});
@@ -58,6 +89,8 @@ function LoginForm() {
                         Enter your email below to login to your account
                     </FieldDescription>
                     <FieldGroup>
+                        <FormRootMessage<LoginSchemaType> control={control} />
+
                         <Controller
                             name="email"
                             control={control}
@@ -104,8 +137,6 @@ function LoginForm() {
                                 </Field>
                             )}
                         />
-
-                        {errors.root?.message && <p>Error</p>}
 
                         <Button type="submit">Login</Button>
                     </FieldGroup>
@@ -174,18 +205,18 @@ function RegisterForm() {
                             )}
                         />
                         <Controller
-                            name="username"
+                            name="nickname"
                             control={control}
                             render={({ field, fieldState }) => (
                                 <Field data-invalid={fieldState.invalid}>
                                     <FieldLabel htmlFor={field.name}>
-                                        Username
+                                        Nickname
                                     </FieldLabel>
                                     <Input
                                         {...field}
                                         id={field.name}
                                         aria-invalid={fieldState.invalid}
-                                        placeholder="Your username..."
+                                        placeholder="Your nickname..."
                                     />
                                     {fieldState.invalid && (
                                         <FieldError

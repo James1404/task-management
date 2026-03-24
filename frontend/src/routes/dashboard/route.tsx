@@ -19,7 +19,10 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { getAllProjectsOptions } from "@/queries/projects";
+import {
+    currentProjectOptions,
+    getAllProjectsOptions,
+} from "@/queries/projects.query";
 import { loggedIn } from "@/stores/credentials";
 import {
     QueryClient,
@@ -31,6 +34,7 @@ import {
     Link,
     Outlet,
     redirect,
+    useParams,
 } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/dashboard")({
@@ -49,7 +53,7 @@ function Project({
     name,
     description,
 }: {
-    id: number;
+    id: string;
     name: string;
     description?: string;
 }) {
@@ -117,13 +121,35 @@ function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     );
 }
 
+function ProjectNameFromId({ projectId }: { projectId: string }) {
+    const { isPending, isError, error, data } = useQuery(
+        currentProjectOptions(projectId),
+    );
+
+    if (isPending) {
+        return <span>Loading...</span>;
+    }
+
+    if (isError) {
+        return <span>Error: {error.message}</span>;
+    }
+
+    return <h1 className="text-base font-bold">{data.name}</h1>;
+}
+
+function ProjectName() {
+    const { projectId } = useParams({ strict: false });
+
+    if (!projectId) {
+        return <></>;
+    }
+
+    return <ProjectNameFromId projectId={projectId} />;
+}
+
 const queryClient = new QueryClient();
 
 function RouteComponent() {
-    // const { isPending, isError, error, data } = useQuery(
-    //     currentProjectOptions(),
-    // );
-
     return (
         <QueryClientProvider client={queryClient}>
             <SidebarProvider>
@@ -132,20 +158,7 @@ function RouteComponent() {
                     <header className="flex items-center px-4 py-2">
                         <SidebarTrigger />
                         <Separator orientation="vertical" className="mx-4" />
-                        <h1 className="text-base font-bold">
-                            {/* {(() => {
-                                if (isPending) {
-                                    return <span>Loading...</span>;
-                                }
-
-                                if (isError) {
-                                    return <span>Error: {error.message}</span>;
-                                }
-
-                                return <span>{data.name}</span>;
-                            })()} */}
-                            Project Name (Please change later!!!!!!!)
-                        </h1>
+                        <ProjectName />
                     </header>
                     <main className="h-full">
                         <div className="flex flex-col items-center justify-center h-full">
