@@ -1,0 +1,19 @@
+import z from "zod";
+
+export type TaskID = string;
+
+export const TaskDataSchema = z.object({
+    title: z.string().min(3),
+    description: z.string().optional(),
+});
+
+export type TaskDataSchemaType = z.infer<typeof TaskDataSchema>;
+
+export const TaskSchema = z.intersection(
+    TaskDataSchema,
+    z.object({
+        id: z.string(),
+        columnId: z.string(),
+    }),
+);
+export type TaskSchemaType = z.infer<typeof TaskSchema>;

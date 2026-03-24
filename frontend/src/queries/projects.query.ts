@@ -1,12 +1,19 @@
-import { createProject, getProject, getProjects } from "@/api/projects";
-import type { ProjectDataSchemaType } from "@/schemas/project.schema";
+import {
+    createBasicProject,
+    getProject,
+    getProjects,
+} from "@/api/projects.api";
+import type {
+    ProjectDataSchemaType,
+    ProjectID,
+} from "@/schemas/project.schema";
 import {
     mutationOptions,
     queryOptions,
     useQueryClient,
 } from "@tanstack/react-query";
 
-export function currentProjectOptions(projectId: number) {
+export function currentProjectOptions(projectId: ProjectID) {
     return queryOptions({
         queryKey: ["currentProject", projectId],
         queryFn: async () => getProject(projectId),
@@ -26,7 +33,7 @@ export function createProjectOptions() {
 
     return mutationOptions({
         mutationFn: async (body: ProjectDataSchemaType) =>
-            await createProject(body),
+            await createBasicProject(body),
         onSuccess: async () =>
             await queryClient.invalidateQueries({ queryKey: ["projects"] }),
     });
