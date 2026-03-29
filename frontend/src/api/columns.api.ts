@@ -1,10 +1,12 @@
 import type {
     ColumnDataSchemaType,
+    ColumnID,
     ColumnSchemaType,
 } from "@/schemas/columns.schema";
 import { getTaskManagementAPI } from "../../generated/backend";
+import type { ProjectID } from "@/schemas/project.schema";
 
-export async function getAllColumns(projectId: string) {
+export async function getAllColumns(projectId: ProjectID) {
     const columns =
         await getTaskManagementAPI().getV1ProjectsProjectIdColumns(projectId);
 
@@ -29,6 +31,11 @@ export async function getAllColumns(projectId: string) {
     // }
 
     return columns as ColumnSchemaType[];
+}
+
+export async function getColumn(columnId: ColumnID) {
+    const columns = await getTaskManagementAPI().getV1ColumnsColumnId(columnId);
+    return columns as ColumnSchemaType;
 }
 
 export async function createColumn(

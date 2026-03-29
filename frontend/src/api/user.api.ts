@@ -4,13 +4,22 @@ import type {
 } from "@/schemas/user.schema";
 import { clearAccess, setAccess } from "@/stores/credentials";
 import { getTaskManagementAPI } from "../../generated/backend";
+import { isAxiosError } from "axios";
 
 export async function loginToUser(body: LoginSchemaType) {
-    const data = await getTaskManagementAPI().postV1AuthLogin(
-        { ...body },
-        { withCredentials: true },
-    );
+    try {
+        const data = await getTaskManagementAPI().postV1AuthLogin(
+            { ...body },
+            { withCredentials: true },
+        );
+        setAccess(data.access);
+    } catch (err) {
+        if (isAxiosError(err)) {
+            throw new Error("Failed to login into user");
+        }
 
+        throw err;
+    }
     // const { data, error } = await client.POST("/v1/auth/login", {
     //     body: {
     //         ...schema,
@@ -25,8 +34,6 @@ export async function loginToUser(body: LoginSchemaType) {
     // if (!data) {
     //     throw new Error("Failed to load into user");
     // }
-
-    setAccess(data.access);
 }
 
 export async function registerAccount(body: RegisterSchemaType) {

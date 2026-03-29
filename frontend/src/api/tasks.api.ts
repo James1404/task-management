@@ -3,6 +3,7 @@ import type {
     TaskDataSchemaType,
     TaskID,
     TaskSchemaType,
+    TaskUpdateSchemaType,
 } from "@/schemas/task.schema";
 import { getTaskManagementAPI } from "../../generated/backend";
 
@@ -51,6 +52,23 @@ export async function createTask(columnId: ColumnID, body: TaskDataSchemaType) {
     // if (!data) {
     //     throw new Error("Failed to create task");
     // }
+
+    return data as TaskSchemaType;
+}
+
+export async function updateTask(taskId: ColumnID, body: TaskUpdateSchemaType) {
+    const data = await getTaskManagementAPI().patchV1TasksTaskId(taskId, {
+        ...body,
+    });
+
+    return data as TaskSchemaType;
+}
+
+export async function moveTask(taskId: TaskID, columnId: ColumnID) {
+    const data = await getTaskManagementAPI().postV1TasksTaskIdMoveToColumnId(
+        taskId,
+        columnId,
+    );
 
     return data as TaskSchemaType;
 }

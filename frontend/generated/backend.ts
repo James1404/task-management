@@ -35,7 +35,8 @@ import type {
   PostV1Projects200,
   PostV1ProjectsBody,
   PostV1ProjectsProjectIdColumns200,
-  PostV1ProjectsProjectIdColumnsBody
+  PostV1ProjectsProjectIdColumnsBody,
+  PostV1TasksTaskIdMoveToColumnId204
 } from './model';
 
 import { customInstance } from '../src/lib/axios-instance';
@@ -345,6 +346,19 @@ const deleteV1TasksTaskId = (
       options);
     }
   
+/**
+ * Move a task to another column
+ */
+const postV1TasksTaskIdMoveToColumnId = (
+    taskId: string,
+    columnId: string,
+ options?: SecondParameter<typeof customInstance<PostV1TasksTaskIdMoveToColumnId204>>,) => {
+      return customInstance<PostV1TasksTaskIdMoveToColumnId204>(
+      {url: `/v1/tasks/${taskId}/move_to/${columnId}`, method: 'POST'
+    },
+      options);
+    }
+  
 const get = (
     
  options?: SecondParameter<typeof customInstance<string>>,) => {
@@ -354,7 +368,7 @@ const get = (
       options);
     }
   
-return {getV1Health,getV1HealthReady,postV1AuthRegister,postV1AuthLogin,postV1AuthLogout,postV1AuthLogoutAll,postV1AuthRefresh,deleteV1Account,patchV1Account,getV1Projects,postV1Projects,getV1ProjectsProjectId,patchV1ProjectsProjectId,deleteV1ProjectsProjectId,getV1ProjectsProjectIdColumns,postV1ProjectsProjectIdColumns,getV1ColumnsColumnId,patchV1ColumnsColumnId,deleteV1ColumnsColumnId,getV1ColumnsColumnIdTasks,postV1ColumnsColumnIdTasks,getV1TasksTaskId,patchV1TasksTaskId,deleteV1TasksTaskId,get}};
+return {getV1Health,getV1HealthReady,postV1AuthRegister,postV1AuthLogin,postV1AuthLogout,postV1AuthLogoutAll,postV1AuthRefresh,deleteV1Account,patchV1Account,getV1Projects,postV1Projects,getV1ProjectsProjectId,patchV1ProjectsProjectId,deleteV1ProjectsProjectId,getV1ProjectsProjectIdColumns,postV1ProjectsProjectIdColumns,getV1ColumnsColumnId,patchV1ColumnsColumnId,deleteV1ColumnsColumnId,getV1ColumnsColumnIdTasks,postV1ColumnsColumnIdTasks,getV1TasksTaskId,patchV1TasksTaskId,deleteV1TasksTaskId,postV1TasksTaskIdMoveToColumnId,get}};
 export type GetV1HealthResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getTaskManagementAPI>['getV1Health']>>>
 export type GetV1HealthReadyResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getTaskManagementAPI>['getV1HealthReady']>>>
 export type PostV1AuthRegisterResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getTaskManagementAPI>['postV1AuthRegister']>>>
@@ -379,4 +393,5 @@ export type PostV1ColumnsColumnIdTasksResult = NonNullable<Awaited<ReturnType<Re
 export type GetV1TasksTaskIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getTaskManagementAPI>['getV1TasksTaskId']>>>
 export type PatchV1TasksTaskIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getTaskManagementAPI>['patchV1TasksTaskId']>>>
 export type DeleteV1TasksTaskIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getTaskManagementAPI>['deleteV1TasksTaskId']>>>
+export type PostV1TasksTaskIdMoveToColumnIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getTaskManagementAPI>['postV1TasksTaskIdMoveToColumnId']>>>
 export type GetResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getTaskManagementAPI>['get']>>>

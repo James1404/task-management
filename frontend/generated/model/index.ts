@@ -75,3 +75,6 @@ export * from './postV1ProjectsProjectIdColumns200';
 export * from './postV1ProjectsProjectIdColumns401';
 export * from './postV1ProjectsProjectIdColumns403';
 export * from './postV1ProjectsProjectIdColumnsBody';
+export * from './postV1TasksTaskIdMoveToColumnId204';
+export * from './postV1TasksTaskIdMoveToColumnId401';
+export * from './postV1TasksTaskIdMoveToColumnId403';

@@ -5,6 +5,7 @@ import type {
 } from "@/schemas/project.schema";
 import { createColumn } from "./columns.api";
 import { getTaskManagementAPI } from "../../generated/backend";
+import { isAxiosError } from "axios";
 
 export async function getProjects() {
     const data = await getTaskManagementAPI().getV1Projects();
@@ -20,27 +21,21 @@ export async function getProjects() {
     return data as ProjectSchemaType[];
 }
 
-export async function getProject(projectId: ProjectID) {
-    const data = await getTaskManagementAPI().getV1ProjectsProjectId(projectId);
+export async function getProject(
+    projectId: ProjectID,
+): Promise<ProjectDataSchemaType | undefined> {
+    try {
+        const data =
+            await getTaskManagementAPI().getV1ProjectsProjectId(projectId);
 
-    // const { data, error } = await client.GET("/v1/projects/{projectId}", {
-    //     credentials: "same-origin",
-    //     params: {
-    //         path: {
-    //             projectId,
-    //         },
-    //     },
-    // });
+        return data;
+    } catch (err) {
+        if (isAxiosError(err)) {
+            throw new Error("Failed to load projects");
+        }
 
-    // if (error) {
-    //     throw new Error(error.error);
-    // }
-
-    // if (!data) {
-    //     throw new Error("Failed to load projects");
-    // }
-
-    return data as ProjectSchemaType;
+        throw err;
+    }
 }
 
 export async function createEmptyProject(body: ProjectDataSchemaType) {
