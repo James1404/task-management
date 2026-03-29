@@ -89,8 +89,6 @@ function LoginForm() {
                         Enter your email below to login to your account
                     </FieldDescription>
                     <FieldGroup>
-                        <FormRootMessage<LoginSchemaType> control={control} />
-
                         <Controller
                             name="email"
                             control={control}
@@ -137,6 +135,8 @@ function LoginForm() {
                                 </Field>
                             )}
                         />
+
+                        <FormRootMessage<LoginSchemaType> control={control} />
 
                         <Button type="submit">Login</Button>
                     </FieldGroup>
@@ -272,6 +272,11 @@ function RegisterForm() {
                                 </Field>
                             )}
                         />
+
+                        <FormRootMessage<RegisterSchemaType>
+                            control={control}
+                        />
+
                         <Button type="submit">Register</Button>
                     </FieldGroup>
                 </FieldSet>
