@@ -2,8 +2,11 @@ import { PrismaClient, Task } from "../../generated/prisma/client.ts";
 import { User } from "../plugins/auth.plugin.ts";
 import columnServices from "@/services/columns.services.ts";
 import { ForbiddenError, NotFoundError } from "../utils/error.ts";
+import { ColumnID } from "../schemas/column.schema.ts";
+import { TaskID, TaskOrderType } from "../schemas/tasks.schema.ts";
+import prismaConfig from "../../prisma.config.ts";
 
-async function getTask(id: number, user: User, prisma: PrismaClient) {
+async function getTask(id: TaskID, user: User, prisma: PrismaClient) {
     const task = await prisma.task.findUnique({
         where: { id },
         include: { column: true },
@@ -25,7 +28,7 @@ interface Create {
 
 async function createTask(
     user: User,
-    columnId: string,
+    columnId: ColumnID,
     details: Create,
     prisma: PrismaClient,
 ) {
@@ -44,7 +47,7 @@ type Update = Partial<Omit<Task, "id" | "projectId">>;
 
 async function updateTask(
     user: User,
-    taskId: number,
+    taskId: TaskID,
     details: Update,
     prisma: PrismaClient,
 ) {
@@ -55,7 +58,7 @@ async function updateTask(
     });
 }
 
-async function deleteTask(user: User, taskId: number, prisma: PrismaClient) {
+async function deleteTask(user: User, taskId: TaskID, prisma: PrismaClient) {
     const task = await prisma.task.findUnique({
         where: { id: taskId },
         include: {
@@ -76,9 +79,52 @@ async function deleteTask(user: User, taskId: number, prisma: PrismaClient) {
     await prisma.task.delete({ where: { id: taskId } });
 }
 
+async function reorderColumn(
+    columnId: ColumnID,
+    start: number,
+    end: number,
+    prisma: PrismaClient,
+) {
+    await prisma.$transaction([
+        prisma.task.updateMany({
+            where: {
+                columnId,
+                order: {
+                    gte: start,
+                    lt: end,
+                },
+            },
+            data: {
+                order: { increment: 1 },
+            },
+        }),
+    ]);
+}
+
+async function moveTaskToColumn(
+    user: User,
+    taskId: TaskID,
+    columnId: ColumnID,
+    order: TaskOrderType,
+    prisma: PrismaClient,
+) {
+    const task = await prisma.task.update({
+        where: {
+            id: taskId,
+        },
+        data: {
+            columnId,
+            order,
+        },
+    });
+
+    return task;
+}
+
 export default {
     getTask,
     createTask,
     updateTask,
     deleteTask,
+    moveTaskToColumn,
 };
