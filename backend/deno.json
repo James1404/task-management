@@ -5,6 +5,7 @@
         "db:generate": "deno run -A --env=.env npm:prisma generate",
         "db:push": "deno run -A --env=.env npm:prisma db push",
         "db:migrate": "deno run -A --env=.env npm:prisma migrate dev",
+        "db:migrate-create": "deno run -A --env=.env npm:prisma migrate dev --create-only",
         "db:studio": "deno run -A --env=.env npm:prisma studio",
         "db:deploy": "deno run -A npm:prisma migrate deploy && deno run -A npm:prisma generate"
     },
