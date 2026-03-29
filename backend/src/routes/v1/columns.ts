@@ -53,7 +53,7 @@ export default async function routes(
         Params: ColumnParamsType;
         Reply: ColumnFullSchemaType;
     }>(
-        "/:projectId",
+        "/:columnId",
         {
             schema: {
                 body: ColumnUpdateSchema,
