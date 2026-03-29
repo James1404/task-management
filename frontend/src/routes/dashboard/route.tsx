@@ -19,16 +19,11 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar";
-import {
-    currentProjectOptions,
-    getAllProjectsOptions,
-} from "@/queries/projects.query";
+import { Spinner } from "@/components/ui/spinner";
+import { queryClient } from "@/lib/client";
+import { useCurrentProject, useGetAllProjects } from "@/queries/projects.query";
 import { loggedIn } from "@/stores/credentials";
-import {
-    QueryClient,
-    QueryClientProvider,
-    useQuery,
-} from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import {
     createFileRoute,
     Link,
@@ -78,9 +73,7 @@ function Project({
 }
 
 function Projects() {
-    const { isPending, isError, error, data } = useQuery(
-        getAllProjectsOptions(),
-    );
+    const { isPending, isError, error, data } = useGetAllProjects();
 
     if (isPending) {
         return <span>Loading...</span>;
@@ -122,16 +115,18 @@ function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 }
 
 function ProjectNameFromId({ projectId }: { projectId: string }) {
-    const { isPending, isError, error, data } = useQuery(
-        currentProjectOptions(projectId),
-    );
+    const { isPending, isError, error, data } = useCurrentProject(projectId);
 
     if (isPending) {
-        return <span>Loading...</span>;
+        return <Spinner />;
     }
 
     if (isError) {
         return <span>Error: {error.message}</span>;
+    }
+
+    if (!data) {
+        return <span>Project does not exist</span>;
     }
 
     return <h1 className="text-base font-bold">{data.name}</h1>;
@@ -147,23 +142,19 @@ function ProjectName() {
     return <ProjectNameFromId projectId={projectId} />;
 }
 
-const queryClient = new QueryClient();
-
 function RouteComponent() {
     return (
         <QueryClientProvider client={queryClient}>
             <SidebarProvider>
                 <DashboardSidebar variant="inset" />
-                <SidebarInset>
+                <SidebarInset className="overflow-hidden">
                     <header className="flex items-center px-4 py-2">
                         <SidebarTrigger />
                         <Separator orientation="vertical" className="mx-4" />
                         <ProjectName />
                     </header>
-                    <main className="h-full">
-                        <div className="flex flex-col items-center justify-center h-full">
-                            <Outlet />
-                        </div>
+                    <main className="overflow-x-auto max-x-full h-full">
+                        <Outlet />
                     </main>
                 </SidebarInset>
             </SidebarProvider>
