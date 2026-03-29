@@ -1,10 +1,9 @@
-import { createProjectOptions } from "@/queries/projects.query";
+import { useCreateProject } from "@/queries/projects.query";
 import {
     ProjectDataSchema,
     type ProjectDataSchemaType,
 } from "@/schemas/project.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import {
@@ -37,7 +36,7 @@ export function CreateProjectDialog({
         },
     });
 
-    const mutation = useMutation(createProjectOptions());
+    const mutation = useCreateProject();
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const onSubmit: SubmitHandler<ProjectDataSchemaType> = async formData => {
@@ -52,7 +51,7 @@ export function CreateProjectDialog({
     return (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-                <Button>{children}</Button>
+                <Button variant="outline">{children}</Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
