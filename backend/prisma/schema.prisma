@@ -29,11 +29,11 @@ model User {
     password String
     salt     String
 
-    projects Project[]
-
-    createdAt     DateTime       @default(now()) @db.Timestamptz(6)
-    updatedAt     DateTime       @updatedAt @db.Timestamptz(6)
+    projects      Project[]
     refreshTokens RefreshToken[]
+
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
 
 model RefreshToken {
@@ -65,17 +65,28 @@ model Column {
 
     name String
 
+    order Int
+
     project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
     projectId String
 
     tasks Task[]
+
+    @@index([projectId, order])
 }
 
 model Task {
-    id          Int     @id @default(autoincrement())
+    id          String  @id @default(uuid())
     title       String
     description String?
 
+    order Int
+
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
     column   Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
     columnId String
+
+    @@index([columnId, order])
 }
