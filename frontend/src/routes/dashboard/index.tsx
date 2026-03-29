@@ -15,7 +15,7 @@ export const Route = createFileRoute("/dashboard/")({
 
 function RouteComponent() {
     return (
-        <Empty>
+        <Empty className="h-full">
             <EmptyHeader>
                 <EmptyTitle>No Project Selected</EmptyTitle>
                 <EmptyDescription>
