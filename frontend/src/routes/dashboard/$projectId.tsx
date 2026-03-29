@@ -23,16 +23,18 @@ import {
     FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import {
-    getColumnsOptions,
-    getColumnTasksOptions,
+    useGetAllColumns,
+    useGetColumn,
+    useGetColumnTasks,
 } from "@/queries/columns.query";
-import { currentProjectOptions } from "@/queries/projects.query";
-import { createTaskOptions, deleteTaskOptions } from "@/queries/tasks.query";
+import {
+    useCreateTask,
+    useDeleteTask,
+    useMoveTask,
+} from "@/queries/tasks.query";
 import type { ColumnID, ColumnSchemaType } from "@/schemas/columns.schema";
 import {
     TaskDataSchema,
@@ -40,14 +42,42 @@ import {
     type TaskSchemaType,
 } from "@/schemas/task.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Trash } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, notFound } from "@tanstack/react-router";
+import { GripVertical, Plus, Trash } from "lucide-react";
 import { useState } from "react";
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
+import {
+    DragDropProvider,
+    useDraggable,
+    useDroppable,
+    type DragEndEvent,
+} from "@dnd-kit/react";
+import { cn } from "@/lib/utils";
+import { queryClient } from "@/lib/client";
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyTitle,
+} from "@/components/ui/empty";
+import { CreateProjectDialog } from "@/components/create-project-dialog";
+import {
+    useCurrentProject,
+    useCurrentProjectOptions,
+} from "@/queries/projects.query";
 
 export const Route = createFileRoute("/dashboard/$projectId")({
+    async loader({ params: { projectId } }) {
+        try {
+            await queryClient.fetchQuery(useCurrentProjectOptions(projectId));
+        } catch (err) {
+            throw notFound({ data: err });
+        }
+    },
     component: RouteComponent,
+    notFoundComponent: NotFoundComponent,
 });
 
 function CreateTaskDialog({
@@ -65,11 +95,11 @@ function CreateTaskDialog({
         },
     });
 
-    const mutation = useMutation(createTaskOptions(columnId));
+    const mutation = useCreateTask(columnId);
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const onSubmit: SubmitHandler<TaskDataSchemaType> = async formData => {
-        const task = await mutation.mutateAsync(formData);
+        await mutation.mutateAsync(formData);
         setDialogOpen(false);
     };
 
@@ -144,27 +174,58 @@ function CreateTaskDialog({
     );
 }
 
-function Task({ description, title, id, columnId }: TaskSchemaType) {
-    const mutation = useMutation(deleteTaskOptions(columnId, id));
+type DraggableType = {
+    task: TaskSchemaType;
+};
+
+function Task(task: TaskSchemaType) {
+    const { description, title, id, columnId } = task;
+
+    const mutation = useDeleteTask(columnId, id);
 
     const onClick = async () => {
         await mutation.mutateAsync();
     };
 
+    const { ref, handleRef, isDragging } = useDraggable<DraggableType>({
+        id,
+        data: { task },
+        // modifiers: [RestrictToElement.configure({ element: null })],
+    });
+
+    const className = cn(
+        `flex flex-row justify-between items-center
+        w-full min-w-0
+        px-3 py-1
+        rounded-md
+        border
+        shadow-none
+        bg-card text-card-foreground
+        transition-all`,
+        !isDragging && "border-transparent",
+        isDragging && "shadow-md",
+    );
+
     return (
-        <div className="flex flex-row w-full justify-between">
+        <div className={className} ref={ref}>
             <h3>{title}</h3>
             <p>{description}</p>
 
-            <Button variant="ghost" onClick={onClick}>
-                <Trash />
-            </Button>
+            <div>
+                <Button variant="ghost" onClick={onClick}>
+                    <Trash />
+                </Button>
+
+                <Button variant="ghost" ref={handleRef}>
+                    <GripVertical />
+                </Button>
+            </div>
         </div>
     );
 }
 
 function Tasks({ columnId }: { columnId: string }) {
-    const { status, error, data } = useQuery(getColumnTasksOptions(columnId));
+    const { status, error, data } = useGetColumnTasks(columnId);
 
     if (status === "pending") {
         return <Spinner />;
@@ -175,7 +236,7 @@ function Tasks({ columnId }: { columnId: string }) {
     }
 
     return (
-        <div className="flex flex-col gap-2">
+        <div className="h-full flex flex-col gap-2">
             {data.map(task => (
                 <Task {...task} key={task.id} />
             ))}
@@ -183,28 +244,55 @@ function Tasks({ columnId }: { columnId: string }) {
     );
 }
 
-function Column({ name, id }: ColumnSchemaType) {
+function Column({ id }: ColumnSchemaType) {
+    const { status, error, data } = useGetColumn(id);
+
+    const { ref, isDropTarget } = useDroppable<DraggableType>({
+        id,
+    });
+
+    if (status === "pending") {
+        return <Spinner />;
+    }
+
+    if (status === "error") {
+        return <span>Error: {error.message}</span>;
+    }
+
+    const contentClassName = cn(
+        "h-full box-border border-2 border-dashed border-transparent transition-colors",
+        isDropTarget && "border-blue-500",
+    );
+
     return (
-        <Card className="h-full w-150">
+        <Card className="h-full w-125">
             <CardHeader>
-                <CardTitle>{name}</CardTitle>
+                <CardTitle>
+                    <Input
+                        className="border-0 bg-transparent!"
+                        value={data.name}
+                    />
+                </CardTitle>
                 <CardAction>
                     <CreateTaskDialog columnId={id}>
                         <Plus />
                     </CreateTaskDialog>
                 </CardAction>
             </CardHeader>
-            <CardContent>
+            <CardContent ref={ref} className={contentClassName}>
                 <Tasks columnId={id} />
             </CardContent>
         </Card>
     );
 }
 
-function CreateColumn({ columnId }: { columnId: ColumnID | undefined }) {
+function CreateColumn({}: { columnId: ColumnID | undefined }) {
     return (
-        <Button variant="ghost">
-            <Plus />
+        <Button
+            variant="ghost"
+            className="size-7 h-full flex flex-col items-center justify-center space-y-2 group rounded-xl"
+        >
+            <Plus className="text-transparent group-hover:text-current transition-colors" />
         </Button>
     );
 }
@@ -212,7 +300,9 @@ function CreateColumn({ columnId }: { columnId: ColumnID | undefined }) {
 function Columns() {
     const { projectId } = Route.useParams();
 
-    const { status, error, data } = useQuery(getColumnsOptions(projectId));
+    const { status, error, data } = useGetAllColumns(projectId);
+
+    const mutation = useMoveTask();
 
     if (status === "pending") {
         return <Spinner />;
@@ -222,25 +312,40 @@ function Columns() {
         return <span>Error: {error.message}</span>;
     }
 
-    return (
-        <ScrollArea className="h-full">
-            <div className="h-full w-full overflow-auto flex flex-row gap-2 px-5">
-                {data.map(col => (
-                    <>
-                        <CreateColumn />
-                        <Column {...col} key={col.id} />
-                    </>
-                ))}
-            </div>
+    const handleDragEnd: DragEndEvent = async ({ operation, canceled }) => {
+        if (canceled) return;
 
-            <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+        const { target, source } = operation;
+
+        if (!target || !source) return;
+
+        console.log(`Dropped ${source.id} onto ${target.id}`);
+
+        await mutation.mutateAsync({
+            task: source.data.task,
+            to: target.id.toString(),
+        });
+    };
+
+    return (
+        <div className="size-full overflow-x-auto flex-nowrap">
+            <DragDropProvider<DraggableType> onDragEnd={handleDragEnd}>
+                <div className="h-full flex space-x-2 px-4 w-fit">
+                    {data.map((col, idx) => (
+                        <>
+                            <CreateColumn key={idx} columnId={col.id} />
+                            <Column {...col} key={col.id} />
+                        </>
+                    ))}
+                </div>
+            </DragDropProvider>
+        </div>
     );
 }
 
 function CurrentProject() {
     const { projectId } = Route.useParams();
-    const { status, error, data } = useQuery(currentProjectOptions(projectId));
+    const { status, error } = useCurrentProject(projectId);
 
     if (status === "pending") {
         return <Spinner />;
@@ -251,7 +356,7 @@ function CurrentProject() {
     }
 
     return (
-        <div className="h-full w-full py-2">
+        <div className="size-full py-2">
             <Columns />
         </div>
     );
@@ -259,4 +364,22 @@ function CurrentProject() {
 
 function RouteComponent() {
     return <CurrentProject />;
+}
+
+function NotFoundComponent() {
+    return (
+        <Empty className="h-full">
+            <EmptyHeader>
+                <EmptyTitle>Project does not exist</EmptyTitle>
+                <EmptyDescription>
+                    Please select a project in the sidebar or create a new one
+                </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+                <CreateProjectDialog>
+                    <Plus />
+                </CreateProjectDialog>
+            </EmptyContent>
+        </Empty>
+    );
 }
