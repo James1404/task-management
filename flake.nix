@@ -20,6 +20,8 @@
             prisma-engines
 
             deno
+
+            openapi-generator-cli
           ];
           shellHook = ''
             export PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig";
