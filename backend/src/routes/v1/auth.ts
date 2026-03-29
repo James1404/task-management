@@ -41,7 +41,7 @@ export default function routes(fastify: FastifyInstance, _options: object) {
                 httpOnly: true,
                 secure: true,
                 sameSite: "lax",
-                path: "/auth/refresh",
+                path: "/v1/auth/refresh",
             });
 
             return {
@@ -75,7 +75,7 @@ export default function routes(fastify: FastifyInstance, _options: object) {
                 httpOnly: true,
                 secure: true,
                 sameSite: "lax",
-                path: "/auth/refresh",
+                path: "/v1/auth/refresh",
             });
 
             return {
@@ -108,7 +108,7 @@ export default function routes(fastify: FastifyInstance, _options: object) {
             );
 
             reply.clearCookie("refreshToken", {
-                path: "/auth/refresh",
+                path: "/v1/auth/refresh",
             });
 
             return reply.code(200).send();
@@ -139,7 +139,7 @@ export default function routes(fastify: FastifyInstance, _options: object) {
             );
 
             reply.clearCookie("refreshToken", {
-                path: "/auth/refresh",
+                path: "/v1/auth/refresh",
             });
 
             return reply.code(200).send();
@@ -159,9 +159,13 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         },
         async (request, reply) => {
             const refreshToken = request.cookies["refresh"];
+            console.log(refreshToken);
+
             if (refreshToken == null) {
                 throw new UnauthorizedError("Refresh token missing");
             }
+
+            console.log(refreshToken);
 
             const { refresh, access } = await authServices.refresh(
                 {
@@ -170,11 +174,14 @@ export default function routes(fastify: FastifyInstance, _options: object) {
                 fastify.prisma,
             );
 
+            console.log(refresh);
+            console.log(access);
+
             reply.setCookie("refresh", refresh, {
                 httpOnly: true,
                 secure: true,
                 sameSite: "lax",
-                path: "/auth/refresh",
+                path: "/v1/auth/refresh",
             });
 
             return {
