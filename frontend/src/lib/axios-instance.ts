@@ -24,21 +24,28 @@ AXIOS_INSTANCE.interceptors.request.use(request => {
 });
 
 createAuthRefresh(AXIOS_INSTANCE, async failedRequest => {
-    const response = await NON_AUTH_AXIOS_INSTANCE.post(
-        "/v1/auth/refresh",
-        {},
-        {
-            headers: { Authorization: getAuthorizationHeader() },
-            withCredentials: true,
-        },
-    );
+    try {
+        const response = await NON_AUTH_AXIOS_INSTANCE.post(
+            "/v1/auth/refresh",
+            {},
+            {
+                headers: { Authorization: getAuthorizationHeader() },
+                withCredentials: true,
+            },
+        );
 
-    setAccess(response.data.access);
+        setAccess(response.data.access);
 
-    failedRequest.response.config.headers["Authorization"] =
-        getAuthorizationHeader();
+        failedRequest.response.config.headers["Authorization"] =
+            getAuthorizationHeader();
 
-    return Promise.resolve();
+        return Promise.resolve();
+    } catch (err) {
+        clearAccess();
+        router.navigate({ to: "/" });
+
+        return Promise.reject();
+    }
 });
 
 // async function refresh() {
@@ -111,12 +118,12 @@ export const customInstance = <T>(
     config: AxiosRequestConfig,
     options?: AxiosRequestConfig,
 ): Promise<T> => {
-    // if (!NonAuthPaths.includes(config.url ?? "")) {
-    //     return NON_AUTH_AXIOS_INSTANCE({
-    //         ...config,
-    //         ...options,
-    //     }).then(({ data }) => data);
-    // }
+    if (NonAuthPaths.includes(config.url ?? "")) {
+        return NON_AUTH_AXIOS_INSTANCE({
+            ...config,
+            ...options,
+        }).then(({ data }) => data);
+    }
 
     return AXIOS_INSTANCE({
         ...config,
