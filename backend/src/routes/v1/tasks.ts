@@ -5,6 +5,8 @@ import taskServices from "@/services/tasks.services.ts";
 import {
     TaskFullSchema,
     TaskFullSchemaType,
+    TaskMoveParams,
+    TaskMoveParamsType,
     TaskParams,
     TaskParamsType,
     TaskPrismaMap,
@@ -72,6 +74,27 @@ export default async function routes(
             await taskServices.deleteTask(
                 request.user,
                 request.params.taskId,
+                fastify.prisma,
+            );
+
+            return reply.code(204).send();
+        },
+    );
+
+    fastify.post<{ Params: TaskMoveParamsType }>(
+        "/:taskId/move_to/:columnId",
+        {
+            schema: {
+                params: TaskMoveParams,
+                description: "Move a task to another column",
+                response: { 204: Type.Object({}) },
+            },
+        },
+        async (request, reply) => {
+            await taskServices.moveTaskToColumn(
+                request.user,
+                request.params.taskId,
+                request.params.columnId,
                 fastify.prisma,
             );
 
