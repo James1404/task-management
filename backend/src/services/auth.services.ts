@@ -180,7 +180,7 @@ async function refresh(details: Refresh, prisma: PrismaClient) {
     }
 
     if (dbToken.expiresAt < new Date()) {
-        await prisma.refreshToken.delete({
+        await prisma.refreshToken.deleteMany({
             where: { id: dbToken.id },
         });
         throw new UnauthorizedError("Refresh token expired");
@@ -197,9 +197,13 @@ async function refresh(details: Refresh, prisma: PrismaClient) {
     }
 
     const refresh = await prisma.$transaction(async tx => {
-        await tx.refreshToken.delete({
+        const deleted = await tx.refreshToken.deleteMany({
             where: { id: dbToken.id },
         });
+
+        if (deleted.count === 0) {
+            throw new UnauthorizedError("Token already used");
+        }
 
         return await issueRefreshToken(dbToken.userId, tx);
     });
