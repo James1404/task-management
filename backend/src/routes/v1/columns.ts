@@ -3,6 +3,8 @@ import authPlugin from "@/plugins/auth.plugin.ts";
 import {
     ColumnFullSchema,
     ColumnFullSchemaType,
+    ColumnMoveBody,
+    ColumnMoveBodyType,
     ColumnParams,
     ColumnParamsType,
     ColumnPrismaMap,
@@ -58,7 +60,7 @@ export default async function routes(
             schema: {
                 body: ColumnUpdateSchema,
                 params: ColumnParams,
-                description: "Update project data",
+                description: "Update column data",
                 response: {
                     200: ColumnFullSchema,
                 },
@@ -81,7 +83,7 @@ export default async function routes(
         {
             schema: {
                 params: ColumnParams,
-                description: "Get column data",
+                description: "Delete a column",
                 response: {
                     204: Type.Object({}),
                 },
@@ -145,6 +147,28 @@ export default async function routes(
             );
 
             return TaskPrismaMap(task);
+        },
+    );
+
+    fastify.post<{ Params: ColumnParamsType; Body: ColumnMoveBodyType }>(
+        "/:columnId/reorder",
+        {
+            schema: {
+                body: ColumnMoveBody,
+                params: ColumnParams,
+                description: "Reorder a column",
+                response: { 204: Type.Object({}) },
+            },
+        },
+        async ({ user, params, body }, reply) => {
+            await columnsServices.reorderColumn(
+                user,
+                params.columnId,
+                body.order,
+                fastify.prisma,
+            );
+
+            return reply.code(204).send();
         },
     );
 }
