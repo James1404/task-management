@@ -14,4 +14,5 @@ export type PostV1ColumnsColumnIdTasks200 = {
 } & {
   id: string;
   columnId: string;
+  order: number;
 };

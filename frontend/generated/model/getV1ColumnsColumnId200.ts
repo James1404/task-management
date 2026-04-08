@@ -11,4 +11,5 @@ export type GetV1ColumnsColumnId200 = {
 } & {
   /** @minLength 3 */
   name: string;
+  order: number;
 };

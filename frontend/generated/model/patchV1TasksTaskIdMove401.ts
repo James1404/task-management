@@ -6,10 +6,9 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type GetV1ProjectsProjectIdColumns200Item = {
-  id: string;
-} & {
-  /** @minLength 3 */
-  name: string;
-  order: number;
+/**
+ * Authentication failed or missing token
+ */
+export type PatchV1TasksTaskIdMove401 = {
+  error: string;
 };

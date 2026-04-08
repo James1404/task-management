@@ -11,4 +11,5 @@ export type PostV1ProjectsProjectIdColumns200 = {
 } & {
   /** @minLength 3 */
   name: string;
+  order: number;
 };

@@ -14,4 +14,5 @@ export type PatchV1TasksTaskId200 = {
 } & {
   id: string;
   columnId: string;
+  order: number;
 };

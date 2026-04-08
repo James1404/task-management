@@ -6,10 +6,4 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type GetV1ProjectsProjectIdColumns200Item = {
-  id: string;
-} & {
-  /** @minLength 3 */
-  name: string;
-  order: number;
-};
+export type PatchV1TasksTaskIdMove204 = { [key: string]: unknown };

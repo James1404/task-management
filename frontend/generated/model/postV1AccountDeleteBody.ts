@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type GetV1ProjectsProjectIdColumns200Item = {
-  id: string;
-} & {
-  /** @minLength 3 */
-  name: string;
-  order: number;
+export type PostV1AccountDeleteBody = {
+  /**
+   * @minLength 8
+   * @maxLength 64
+   */
+  password: string;
 };

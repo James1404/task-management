@@ -6,10 +6,9 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type GetV1ProjectsProjectIdColumns200Item = {
-  id: string;
-} & {
-  /** @minLength 3 */
-  name: string;
-  order: number;
+/**
+ * User does not have permission
+ */
+export type PostV1AccountDelete403 = {
+  error: string;
 };

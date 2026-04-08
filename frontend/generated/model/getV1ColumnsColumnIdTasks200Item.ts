@@ -14,4 +14,5 @@ export type GetV1ColumnsColumnIdTasks200Item = {
 } & {
   id: string;
   columnId: string;
+  order: number;
 };

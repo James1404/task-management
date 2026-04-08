@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type GetV1ProjectsProjectIdColumns200Item = {
-  id: string;
-} & {
-  /** @minLength 3 */
-  name: string;
+export type PatchV1TasksTaskIdMoveBody = {
+  columnId: string;
+  order?: number;
+} | {
+  columnId?: string;
   order: number;
 };
