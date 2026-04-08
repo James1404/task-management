@@ -1,6 +1,7 @@
 import { Column, PrismaClient } from "../../generated/prisma/client.ts";
 import { User } from "@/plugins/auth.plugin.ts";
-import { UnauthorizedError } from "@/utils/error.ts";
+import { NotFoundError, UnauthorizedError } from "@/utils/error.ts";
+import { ColumnID } from "../schemas/column.schema.ts";
 
 async function getColumn(user: User, columnId: string, prisma: PrismaClient) {
     const column = await prisma.column.findUnique({
@@ -25,7 +26,10 @@ async function getColumnTasks(
     columnId: string,
     prisma: PrismaClient,
 ) {
-    return await prisma.task.findMany({ where: { columnId } });
+    return await prisma.task.findMany({
+        where: { columnId },
+        orderBy: { order: "asc" },
+    });
 }
 
 type Create = Omit<Column, "id" | "projectId">;
@@ -74,6 +78,70 @@ async function deleteColumn(
     });
 }
 
+async function reorderColumn(
+    user: User,
+    columnId: ColumnID,
+    to: number,
+    prisma: PrismaClient,
+) {
+    // TODO: Check user permissions
+
+    const column = await prisma.column.findFirst({
+        where: { id: columnId },
+    });
+
+    if (!column) {
+        throw new NotFoundError();
+    }
+
+    const from = column.order;
+
+    if (from === to) return;
+
+    const operations = [];
+
+    if (from > to) {
+        operations.push(
+            prisma.column.updateMany({
+                where: {
+                    id: columnId,
+                    order: {
+                        gte: to,
+                        lt: from,
+                    },
+                },
+                data: {
+                    order: { increment: 1 },
+                },
+            }),
+        );
+    } else {
+        operations.push(
+            prisma.column.updateMany({
+                where: {
+                    id: columnId,
+                    order: {
+                        gt: from,
+                        lte: to,
+                    },
+                },
+                data: {
+                    order: { decrement: 1 },
+                },
+            }),
+        );
+    }
+
+    operations.push(
+        prisma.column.update({
+            where: { id: columnId },
+            data: { order: to },
+        }),
+    );
+
+    await prisma.$transaction(operations);
+}
+
 export default {
     getColumn,
     getAllColumns,
@@ -81,4 +149,5 @@ export default {
     createColumn,
     updateColumn,
     deleteColumn,
+    reorderColumn,
 };
