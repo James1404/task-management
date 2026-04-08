@@ -1,8 +1,8 @@
 import Type, { Static } from "typebox";
 import { Task as PrismaTask } from "../../generated/prisma/client.ts";
-import { ColumnParams } from "./column.schema.ts";
 
-export type TaskID = string;
+export const TaskIDSchema = Type.String();
+export type TaskID = Static<typeof TaskIDSchema>;
 
 export const TaskOrderSchema = Type.Number();
 export type TaskOrderType = Static<typeof TaskOrderSchema>;
@@ -16,17 +16,20 @@ export type TaskDataSchemaType = Static<typeof TaskDataSchema>;
 export const TaskDataSchema = Type.Object({
     description: Type.Optional(Type.String({ maxLength: 255 })),
     title: Type.String({ maxLength: 32 }),
-    order: TaskOrderSchema,
 });
 
 export const TaskFullSchema = Type.Intersect([
     TaskDataSchema,
-    Type.Object({ id: Type.String(), columnId: Type.String() }),
+    Type.Object({
+        id: TaskIDSchema,
+        columnId: Type.String(),
+        order: TaskOrderSchema,
+    }),
 ]);
 export type TaskFullSchemaType = Static<typeof TaskFullSchema>;
 
 export type TaskUpdateSchemaType = Static<typeof TaskUpdateSchema>;
-export const TaskUpdateSchema = Type.Partial(TaskDataSchema);
+export const TaskUpdateSchema = Type.Partial(Type.Intersect([TaskDataSchema]));
 
 export function TaskPrismaMap(from: PrismaTask): TaskFullSchemaType {
     return {
@@ -38,9 +41,14 @@ export function TaskPrismaMap(from: PrismaTask): TaskFullSchemaType {
     };
 }
 
-export const TaskMoveParams = Type.Intersect([
-    TaskParams,
-    ColumnParams,
-    Type.Object({ order: TaskOrderSchema }),
+export const TaskMoveBody = Type.Union([
+    Type.Object({
+        columnId: Type.String(),
+        order: Type.Optional(TaskOrderSchema),
+    }),
+    Type.Object({
+        columnId: Type.Optional(Type.String()),
+        order: TaskOrderSchema,
+    }),
 ]);
-export type TaskMoveParamsType = Static<typeof TaskMoveParams>;
+export type TaskMoveBodyType = Static<typeof TaskMoveBody>;
