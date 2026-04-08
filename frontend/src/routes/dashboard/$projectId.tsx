@@ -34,25 +34,33 @@ import {
     useCreateTask,
     useDeleteTask,
     useMoveTask,
+    useReorderTask,
 } from "@/queries/tasks.query";
 import type { ColumnID, ColumnSchemaType } from "@/schemas/columns.schema";
 import {
-    TaskDataSchema,
-    type TaskDataSchemaType,
+    TaskCreateSchema,
+    type TaskCreateSchemaType,
     type TaskSchemaType,
 } from "@/schemas/task.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { GripVertical, Plus, Trash } from "lucide-react";
-import { useState } from "react";
+import {
+    EllipsisVertical,
+    GripVertical,
+    MoveDown,
+    MoveUp,
+    Plus,
+    Trash,
+} from "lucide-react";
+import { Fragment, useRef, useState } from "react";
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import {
     DragDropProvider,
-    useDraggable,
     useDroppable,
     type DragEndEvent,
 } from "@dnd-kit/react";
+import { isSortable, useSortable } from "@dnd-kit/react/sortable";
+import { RestrictToHorizontalAxis } from "@dnd-kit/abstract/modifiers";
 import { cn } from "@/lib/utils";
 import { queryClient } from "@/lib/client";
 import {
@@ -67,6 +75,15 @@ import {
     useCurrentProject,
     useCurrentProjectOptions,
 } from "@/queries/projects.query";
+import { CollisionPriority } from "@dnd-kit/abstract";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/dashboard/$projectId")({
     async loader({ params: { projectId } }) {
@@ -87,8 +104,8 @@ function CreateTaskDialog({
     columnId: ColumnID;
     children: React.ReactNode;
 }) {
-    const { handleSubmit, control } = useForm<TaskDataSchemaType>({
-        resolver: zodResolver(TaskDataSchema),
+    const { handleSubmit, control } = useForm<TaskCreateSchemaType>({
+        resolver: zodResolver(TaskCreateSchema),
         defaultValues: {
             title: "",
             description: undefined,
@@ -98,7 +115,7 @@ function CreateTaskDialog({
     const mutation = useCreateTask(columnId);
 
     const [dialogOpen, setDialogOpen] = useState(false);
-    const onSubmit: SubmitHandler<TaskDataSchemaType> = async formData => {
+    const onSubmit: SubmitHandler<TaskCreateSchemaType> = async formData => {
         await mutation.mutateAsync(formData);
         setDialogOpen(false);
     };
@@ -178,8 +195,39 @@ type DraggableType = {
     task: TaskSchemaType;
 };
 
+function DropdownMenuColumns(task: TaskSchemaType) {
+    const { projectId } = Route.useParams();
+
+    const { status, error, data } = useGetAllColumns(projectId);
+    const moveMutation = useMoveTask();
+
+    const moveTo = async (columnId: ColumnID) => {
+        console.log("hello world, move to whater");
+
+        await moveMutation.mutate({ task, columnId });
+    };
+
+    if (status === "pending") {
+        return <Spinner />;
+    }
+
+    if (status === "error") {
+        return <></>;
+    }
+
+    return (
+        <>
+            {data.map(col => (
+                <DropdownMenuItem key={col.id} onClick={() => moveTo(col.id)}>
+                    {col.name}
+                </DropdownMenuItem>
+            ))}
+        </>
+    );
+}
+
 function Task(task: TaskSchemaType) {
-    const { description, title, id, columnId } = task;
+    const { description, title, id, columnId, order } = task;
 
     const mutation = useDeleteTask(columnId, id);
 
@@ -187,14 +235,28 @@ function Task(task: TaskSchemaType) {
         await mutation.mutateAsync();
     };
 
-    const { ref, handleRef, isDragging } = useDraggable<DraggableType>({
-        id,
-        data: { task },
-        // modifiers: [RestrictToElement.configure({ element: null })],
-    });
+    const reorderMutation = useReorderTask();
+
+    const moveUp = async () => {
+        await reorderMutation.mutate({ task, order: order - 1 });
+    };
+
+    const moveDown = async () => {
+        await reorderMutation.mutate({ task, order: order + 1 });
+    };
+
+    const { ref, handleRef, isDragging, isDropTarget, isDragSource } =
+        useSortable<DraggableType>({
+            id,
+            index: order,
+            group: columnId,
+            type: "task",
+            accept: ["task"],
+            data: { task },
+        });
 
     const className = cn(
-        `flex flex-row justify-between items-center
+        `flex flex-row items-center gap-2
         w-full min-w-0
         px-3 py-1
         rounded-md
@@ -204,22 +266,51 @@ function Task(task: TaskSchemaType) {
         transition-all`,
         !isDragging && "border-transparent",
         isDragging && "shadow-md",
+        isDropTarget && "bg-blue-300",
+        isDragSource && "bg-red-300",
     );
 
     return (
         <div className={className} ref={ref}>
-            <h3>{title}</h3>
+            <div className="grow">
+                <h3>
+                    {title} - {order}
+                </h3>
+            </div>
             <p>{description}</p>
 
-            <div>
-                <Button variant="ghost" onClick={onClick}>
-                    <Trash />
-                </Button>
+            <Button variant="ghost" onClick={onClick}>
+                <Trash />
+            </Button>
 
-                <Button variant="ghost" ref={handleRef}>
-                    <GripVertical />
+            <Button variant="ghost" ref={handleRef}>
+                <GripVertical />
+            </Button>
+
+            <span className="px-4 py-2">{order}</span>
+
+            <div className="flex flex-col gap-1">
+                <Button variant="ghost" onClick={moveUp}>
+                    <MoveUp />
+                </Button>
+                <Button variant="ghost" onClick={moveDown}>
+                    <MoveDown />
                 </Button>
             </div>
+
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost">
+                        <EllipsisVertical />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuGroup>
+                        <DropdownMenuLabel>Move to column</DropdownMenuLabel>
+                        <DropdownMenuColumns {...task} />
+                    </DropdownMenuGroup>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
     );
 }
@@ -244,11 +335,16 @@ function Tasks({ columnId }: { columnId: string }) {
     );
 }
 
-function Column({ id }: ColumnSchemaType) {
+function Column({ id, order }: ColumnSchemaType) {
     const { status, error, data } = useGetColumn(id);
 
-    const { ref, isDropTarget } = useDroppable<DraggableType>({
+    const { ref, handleRef } = useSortable({
         id,
+        index: order,
+        type: "column",
+        accept: ["column", "task"],
+        collisionPriority: CollisionPriority.Low,
+        modifiers: [RestrictToHorizontalAxis],
     });
 
     if (status === "pending") {
@@ -261,25 +357,31 @@ function Column({ id }: ColumnSchemaType) {
 
     const contentClassName = cn(
         "h-full box-border border-2 border-dashed border-transparent transition-colors",
-        isDropTarget && "border-blue-500",
     );
 
     return (
-        <Card className="h-full w-125">
+        <Card className="h-full w-125" ref={ref}>
             <CardHeader>
                 <CardTitle>
                     <Input
                         className="border-0 bg-transparent!"
                         value={data.name}
+                        readOnly
                     />
                 </CardTitle>
                 <CardAction>
+                    <span className="px-4 py-2">{order}</span>
+
                     <CreateTaskDialog columnId={id}>
                         <Plus />
                     </CreateTaskDialog>
+
+                    <Button variant="ghost" ref={handleRef}>
+                        <GripVertical />
+                    </Button>
                 </CardAction>
             </CardHeader>
-            <CardContent ref={ref} className={contentClassName}>
+            <CardContent className={contentClassName}>
                 <Tasks columnId={id} />
             </CardContent>
         </Card>
@@ -302,7 +404,10 @@ function Columns() {
 
     const { status, error, data } = useGetAllColumns(projectId);
 
-    const mutation = useMoveTask();
+    const reorderMutation = useReorderTask();
+    const moveMutation = useMoveTask();
+
+    const restrictToElement = useRef(null);
 
     if (status === "pending") {
         return <Spinner />;
@@ -319,23 +424,56 @@ function Columns() {
 
         if (!target || !source) return;
 
-        console.log(`Dropped ${source.id} onto ${target.id}`);
+        if (!isSortable(source)) {
+            return;
+        }
 
-        await mutation.mutateAsync({
-            task: source.data.task,
-            to: target.id.toString(),
-        });
+        if (source.type === "task") {
+            if (source.initialGroup == null || source.group == null) return;
+
+            if (source.initialGroup === source.group) {
+                console.log(
+                    `Move from ${source.initialIndex} to ${source.index}`,
+                );
+
+                await reorderMutation.mutateAsync({
+                    task: source.data.task,
+                    order: source.index,
+                });
+            } else {
+                console.log("cangr group to ");
+
+                // await moveMutation.mutateAsync({
+                //     task: source.data.task,
+                //     columnId: source.group!.toString(),
+                // });
+            }
+
+            console.log(
+                `Dropped ${source.initialGroup} onto ${source.group}, initalIndex ${source.initialIndex} and index ${source.index}`,
+            );
+        }
     };
 
     return (
-        <div className="size-full overflow-x-auto flex-nowrap">
-            <DragDropProvider<DraggableType> onDragEnd={handleDragEnd}>
+        <div
+            className="size-full overflow-x-auto flex-nowrap"
+            ref={restrictToElement}
+        >
+            <DragDropProvider<DraggableType>
+                onDragEnd={handleDragEnd}
+                // modifiers={[
+                //     RestrictToElement.configure({
+                //         element: restrictToElement.current,
+                //     }),
+                // ]}
+            >
                 <div className="h-full flex space-x-2 px-4 w-fit">
                     {data.map((col, idx) => (
-                        <>
-                            <CreateColumn key={idx} columnId={col.id} />
-                            <Column {...col} key={col.id} />
-                        </>
+                        <Fragment key={col.id}>
+                            <CreateColumn columnId={col.id} />
+                            <Column {...col} />
+                        </Fragment>
                     ))}
                 </div>
             </DragDropProvider>
