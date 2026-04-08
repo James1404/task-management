@@ -1,7 +1,13 @@
-import { createTask, deleteTask, getAllTasks, moveTask } from "@/api/tasks.api";
+import {
+    createTask,
+    deleteTask,
+    getAllTasks,
+    moveTask,
+    reorderTask,
+} from "@/api/tasks.api";
 import type { ColumnID } from "@/schemas/columns.schema";
 import type {
-    TaskDataSchemaType,
+    TaskCreateSchemaType,
     TaskID,
     TaskSchemaType,
 } from "@/schemas/task.schema";
@@ -19,7 +25,7 @@ export function useCreateTask(columnId: ColumnID) {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (body: TaskDataSchemaType) =>
+        mutationFn: async (body: TaskCreateSchemaType) =>
             await createTask(columnId, body),
         onSuccess: async () =>
             await queryClient.invalidateQueries({
@@ -34,21 +40,25 @@ export function useMoveTask() {
     return useMutation({
         mutationFn: async ({
             task: { id },
-            to,
+            columnId,
         }: {
             task: TaskSchemaType;
-            to: ColumnID;
-        }) => await moveTask(id, to),
+            columnId: ColumnID;
+        }) => await moveTask(id, columnId),
         async onMutate(variables, context) {
             await context.client.cancelQueries({
-                queryKey: ["columns", variables.to, "tasks"],
+                queryKey: ["columns", variables.columnId, "tasks"],
             });
 
             const previousTasks = context.client.getQueryData([
                 "columns",
-                variables.to,
+                variables.columnId,
                 "tasks",
             ]);
+
+            if (variables.task.columnId === variables.columnId) {
+                return;
+            }
 
             context.client.setQueryData(
                 ["columns", variables.task.columnId, "tasks"],
@@ -57,7 +67,7 @@ export function useMoveTask() {
             );
 
             context.client.setQueryData(
-                ["columns", variables.to, "tasks"],
+                ["columns", variables.columnId, "tasks"],
                 (old: any) => [...old, variables.task],
             );
 
@@ -69,7 +79,45 @@ export function useMoveTask() {
             });
 
             return await queryClient.invalidateQueries({
-                queryKey: ["columns", variables.to, "tasks"],
+                queryKey: ["columns", variables.columnId, "tasks"],
+            });
+        },
+    });
+}
+
+export function useReorderTask() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({
+            task: { id },
+            order,
+        }: {
+            task: TaskSchemaType;
+            order: number;
+        }) => await reorderTask(id, order),
+        async onMutate(variables, context) {
+            await context.client.cancelQueries({
+                queryKey: ["columns", variables.task.columnId, "tasks"],
+            });
+
+            const previousTasks = context.client.getQueryData([
+                "columns",
+                variables.task.columnId,
+                "tasks",
+            ]);
+
+            context.client.setQueryData(
+                ["columns", variables.task.columnId, "tasks"],
+                (old: any[]) =>
+                    old.filter(item => item.id !== variables.task.id),
+            );
+
+            return { previousTasks };
+        },
+        async onSettled(_data, _error, variables) {
+            await queryClient.invalidateQueries({
+                queryKey: ["columns", variables.task.columnId, "tasks"],
             });
         },
     });

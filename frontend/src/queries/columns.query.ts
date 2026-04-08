@@ -1,12 +1,21 @@
-import { createColumn, getAllColumns, getColumn } from "@/api/columns.api";
+import {
+    createColumn,
+    getAllColumns,
+    getColumn,
+    reorderColumn,
+} from "@/api/columns.api";
 import { getAllTasks } from "@/api/tasks.api";
-import type { ColumnDataSchemaType, ColumnID } from "@/schemas/columns.schema";
+import type {
+    ColumnDataSchemaType,
+    ColumnID,
+    OrderType,
+} from "@/schemas/columns.schema";
 import type { ProjectID } from "@/schemas/project.schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function useGetAllColumns(projectId: ProjectID) {
     return useQuery({
-        queryKey: ["project", projectId],
+        queryKey: ["columns"],
         queryFn: async () => await getAllColumns(projectId),
         staleTime: 2 * 60 * 1000,
     });
@@ -25,6 +34,19 @@ export function useGetColumnTasks(columnId: ColumnID) {
         queryKey: ["columns", columnId, "tasks"],
         queryFn: async () => await getAllTasks(columnId),
         staleTime: 2 * 60 * 1000,
+    });
+}
+
+export function useReorderColumns(columnId: ColumnID) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (order: OrderType) =>
+            await reorderColumn(columnId, order),
+        onSuccess: async () =>
+            await queryClient.invalidateQueries({
+                queryKey: ["columns", columnId],
+            }),
     });
 }
 
