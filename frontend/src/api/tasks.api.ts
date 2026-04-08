@@ -1,6 +1,6 @@
 import type { ColumnID } from "@/schemas/columns.schema";
 import type {
-    TaskDataSchemaType,
+    TaskCreateSchemaType,
     TaskID,
     TaskSchemaType,
     TaskUpdateSchemaType,
@@ -11,27 +11,13 @@ export async function getAllTasks(columnId: ColumnID) {
     const data =
         await getTaskManagementAPI().getV1ColumnsColumnIdTasks(columnId);
 
-    // const { data, error } = await client.GET("/v1/columns/{columnId}/tasks", {
-    //     credentials: "same-origin",
-    //     params: {
-    //         path: {
-    //             columnId,
-    //         },
-    //     },
-    // });
-
-    // if (error) {
-    //     throw new Error(error.error);
-    // }
-
-    // if (!data) {
-    //     throw new Error("Failed to load tasks");
-    // }
-
     return data as TaskSchemaType[];
 }
 
-export async function createTask(columnId: ColumnID, body: TaskDataSchemaType) {
+export async function createTask(
+    columnId: ColumnID,
+    body: TaskCreateSchemaType,
+) {
     const data = await getTaskManagementAPI().postV1ColumnsColumnIdTasks(
         columnId,
         { ...body },
@@ -64,11 +50,18 @@ export async function updateTask(taskId: ColumnID, body: TaskUpdateSchemaType) {
     return data as TaskSchemaType;
 }
 
+export async function reorderTask(taskId: TaskID, order: number) {
+    const data = await getTaskManagementAPI().patchV1TasksTaskIdMove(taskId, {
+        order,
+    });
+
+    return data as TaskSchemaType;
+}
+
 export async function moveTask(taskId: TaskID, columnId: ColumnID) {
-    const data = await getTaskManagementAPI().postV1TasksTaskIdMoveToColumnId(
-        taskId,
+    const data = await getTaskManagementAPI().patchV1TasksTaskIdMove(taskId, {
         columnId,
-    );
+    });
 
     return data as TaskSchemaType;
 }

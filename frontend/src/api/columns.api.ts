@@ -70,3 +70,14 @@ export async function createColumn(
 
     return column as ColumnSchemaType;
 }
+
+export async function reorderColumn(columnId: ColumnID, order: number) {
+    const data = await getTaskManagementAPI().postV1ColumnsColumnIdReorder(
+        columnId,
+        {
+            order,
+        },
+    );
+
+    return data as ColumnSchemaType;
+}
