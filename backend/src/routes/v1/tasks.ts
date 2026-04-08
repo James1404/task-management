@@ -1,18 +1,18 @@
 import { FastifyInstance } from "fastify";
 import authPlugin from "@/plugins/auth.plugin.ts";
-import { Static, Type } from "typebox";
+import { Type } from "typebox";
 import taskServices from "@/services/tasks.services.ts";
 import {
     TaskFullSchema,
     TaskFullSchemaType,
-    TaskMoveParams,
-    TaskMoveParamsType,
+    TaskMoveBody,
+    TaskMoveBodyType,
     TaskParams,
     TaskParamsType,
     TaskPrismaMap,
     TaskUpdateSchema,
     TaskUpdateSchemaType,
-} from "../../schemas/tasks.schema.ts";
+} from "@/schemas/tasks.schema.ts";
 
 export default async function routes(
     fastify: FastifyInstance,
@@ -81,22 +81,36 @@ export default async function routes(
         },
     );
 
-    fastify.post<{ Params: TaskMoveParamsType }>(
-        "/:taskId/move_to/:columnId",
+    fastify.patch<{ Params: TaskParamsType; Body: TaskMoveBodyType }>(
+        "/:taskId/move",
         {
             schema: {
-                params: TaskMoveParams,
+                params: TaskParams,
+                body: TaskMoveBody,
                 description: "Move a task to another column",
                 response: { 204: Type.Object({}) },
             },
         },
-        async (request, reply) => {
-            await taskServices.moveTaskToColumn(
-                request.user,
-                request.params.taskId,
-                request.params.columnId,
-                fastify.prisma,
-            );
+        async ({ user, body, params }, reply) => {
+            const { columnId, order } = body;
+
+            if (columnId) {
+                await taskServices.moveTaskToColumn(
+                    user,
+                    params.taskId,
+                    columnId,
+                    fastify.prisma,
+                );
+            }
+
+            if (order) {
+                await taskServices.reorderTask(
+                    user,
+                    params.taskId,
+                    order,
+                    fastify.prisma,
+                );
+            }
 
             return reply.code(204).send();
         },
