@@ -56,12 +56,7 @@ function FormRootMessage<T extends FieldValues>({
 function LoginForm() {
     const navigate = useNavigate({});
 
-    const {
-        handleSubmit,
-        control,
-        setError,
-        formState: { errors },
-    } = useForm<LoginSchemaType>({
+    const { handleSubmit, control, setError } = useForm<LoginSchemaType>({
         resolver: zodResolver(LoginSchema),
     });
 
@@ -149,12 +144,7 @@ function LoginForm() {
 function RegisterForm() {
     const navigate = useNavigate({});
 
-    const {
-        handleSubmit,
-        control,
-        formState: { errors },
-        setError,
-    } = useForm<RegisterSchemaType>({
+    const { handleSubmit, control, setError } = useForm<RegisterSchemaType>({
         resolver: zodResolver(RegisterSchema),
     });
 
