@@ -11,6 +11,7 @@ import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import { AppError } from "./utils/error.ts";
 import routesPlugin from "@/plugins/routes.plugin.ts";
+import { Prisma } from "../generated/prisma/client.ts";
 
 const envToLogger = {
     development: {
@@ -111,6 +112,10 @@ fastify.setErrorHandler((error, _request, reply) => {
 
         reply.code(error.statusCode);
         return { error: error.message };
+    }
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        return reply.code(500).send();
     }
 
     throw error;
