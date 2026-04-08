@@ -39,7 +39,7 @@ const PORT = 3000;
 fastify.register(cors, {
     origin: "http://localhost:5173",
     credentials: true,
-    methods: ["GET", "HEAD", "POST", "DELETE"],
+    methods: ["GET", "HEAD", "POST", "DELETE", "PATCH"],
 });
 fastify.register(cookie);
 fastify.register(import("@fastify/rate-limit"), {
@@ -103,8 +103,6 @@ await fastify.register(import("@fastify/swagger-ui"), {
 
 fastify.setErrorHandler((error, _request, reply) => {
     if (error instanceof AppError) {
-        console.log(error);
-
         if (error.clearAuthCookie) {
             reply.clearCookie("refreshToken", {
                 path: "/auth/refresh",
