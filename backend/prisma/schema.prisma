@@ -72,6 +72,7 @@ model Column {
 
     tasks Task[]
 
+    @@unique([projectId, order])
     @@index([projectId, order])
 }
 
@@ -88,5 +89,6 @@ model Task {
     column   Column @relation(fields: [columnId], references: [id], onDelete: Cascade)
     columnId String
 
+    @@unique([columnId, order])
     @@index([columnId, order])
 }
