@@ -201,6 +201,10 @@ async function moveTaskToColumn(
         throw new NotFoundError();
     }
 
+    if (task.columnId === columnId) {
+        return;
+    }
+
     const lastTask = await prisma.task.findFirst({
         where: { columnId },
         orderBy: { order: "desc" },
