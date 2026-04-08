@@ -17,8 +17,8 @@ export default async function routes(
 ) {
     await fastify.register(authPlugin);
 
-    fastify.delete<{ Body: DeleteUserSchemaType }>(
-        "/",
+    fastify.post<{ Body: DeleteUserSchemaType }>(
+        "/delete",
         {
             schema: {
                 body: DeleteUserSchema,
