@@ -2,8 +2,12 @@ import z from "zod";
 
 export type ColumnID = string;
 
+export const OrderSchema = z.number();
+export type OrderType = z.infer<typeof OrderSchema>;
+
 export const ColumnDataSchema = z.object({
     name: z.string().min(3),
+    order: OrderSchema,
 });
 
 export type ColumnDataSchemaType = z.infer<typeof ColumnDataSchema>;
