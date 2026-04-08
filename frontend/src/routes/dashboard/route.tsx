@@ -153,7 +153,10 @@ function RouteComponent() {
                         <Separator orientation="vertical" className="mx-4" />
                         <ProjectName />
                     </header>
-                    <main className="overflow-x-auto max-x-full h-full">
+                    <main
+                        className="overflow-x-auto max-x-full h-full"
+                        id="main-screen"
+                    >
                         <Outlet />
                     </main>
                 </SidebarInset>
