@@ -37,16 +37,22 @@ export function useGetColumnTasks(columnId: ColumnID) {
     });
 }
 
-export function useReorderColumns(columnId: ColumnID) {
+export function useReorderColumns() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (order: OrderType) =>
-            await reorderColumn(columnId, order),
-        onSuccess: async () =>
+        mutationFn: async ({
+            columnId,
+            order,
+        }: {
+            columnId: ColumnID;
+            order: OrderType;
+        }) => await reorderColumn(columnId, order),
+        onSettled: async (_data, _error, variables) => {
             await queryClient.invalidateQueries({
-                queryKey: ["columns", columnId],
-            }),
+                queryKey: ["columns"],
+            });
+        },
     });
 }
 

@@ -29,6 +29,7 @@ import {
     useGetAllColumns,
     useGetColumn,
     useGetColumnTasks,
+    useReorderColumns,
 } from "@/queries/columns.query";
 import {
     useCreateTask,
@@ -48,6 +49,8 @@ import {
     EllipsisVertical,
     GripVertical,
     MoveDown,
+    MoveLeft,
+    MoveRight,
     MoveUp,
     Plus,
     Trash,
@@ -347,6 +350,16 @@ function Column({ id, order }: ColumnSchemaType) {
         modifiers: [RestrictToHorizontalAxis],
     });
 
+    const reorderMutation = useReorderColumns();
+
+    const moveLeft = async () => {
+        await reorderMutation.mutate({ columnId: id, order: order - 1 });
+    };
+
+    const moveRight = async () => {
+        await reorderMutation.mutate({ columnId: id, order: order + 1 });
+    };
+
     if (status === "pending") {
         return <Spinner />;
     }
@@ -369,12 +382,21 @@ function Column({ id, order }: ColumnSchemaType) {
                         readOnly
                     />
                 </CardTitle>
-                <CardAction>
+                <CardAction className="flex flex-row">
                     <span className="px-4 py-2">{order}</span>
 
                     <CreateTaskDialog columnId={id}>
                         <Plus />
                     </CreateTaskDialog>
+
+                    <div className="flex flex-row gap-1">
+                        <Button variant="ghost" onClick={moveLeft}>
+                            <MoveLeft />
+                        </Button>
+                        <Button variant="ghost" onClick={moveRight}>
+                            <MoveRight />
+                        </Button>
+                    </div>
 
                     <Button variant="ghost" ref={handleRef}>
                         <GripVertical />

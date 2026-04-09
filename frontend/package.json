@@ -12,6 +12,7 @@
         "orval": "orval"
     },
     "dependencies": {
+        "@dnd-kit/helpers": "^0.3.2",
         "@dnd-kit/react": "^0.3.2",
         "@hookform/resolvers": "^5.2.2",
         "@tailwindcss/vite": "^4.2.1",
