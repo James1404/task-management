@@ -17,7 +17,10 @@ async function getProjectsColumns(
     projectId: string,
     prisma: PrismaClient,
 ) {
-    return await prisma.column.findMany({ where: { projectId } });
+    return await prisma.column.findMany({
+        where: { projectId },
+        orderBy: { order: "asc" },
+    });
 }
 
 type Create = Omit<Project, "id" | "ownerId">;

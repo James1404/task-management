@@ -2,6 +2,7 @@ import { Column, PrismaClient } from "../../generated/prisma/client.ts";
 import { User } from "@/plugins/auth.plugin.ts";
 import { NotFoundError, UnauthorizedError } from "@/utils/error.ts";
 import { ColumnID } from "../schemas/column.schema.ts";
+import { clamp } from "../utils/math.ts";
 
 async function getColumn(user: User, columnId: string, prisma: PrismaClient) {
     const column = await prisma.column.findUnique({
@@ -18,6 +19,7 @@ async function getColumn(user: User, columnId: string, prisma: PrismaClient) {
 async function getAllColumns(user: User, prisma: PrismaClient) {
     return await prisma.column.findMany({
         where: { project: { ownerId: user.sub } },
+        orderBy: { order: "asc" },
     });
 }
 
@@ -96,15 +98,29 @@ async function reorderColumn(
 
     const from = column.order;
 
+    const lastColumn = await prisma.column.findFirst({
+        where: { projectId: column.projectId },
+        orderBy: { order: "desc" },
+    });
+
+    const lastColumnOrder = lastColumn ? lastColumn.order : 1;
+
+    to = clamp(to, 1, lastColumnOrder);
+
     if (from === to) return;
 
-    const operations = [];
+    const tempOrder = -1; // must be outside normal range
 
-    if (from > to) {
-        operations.push(
-            prisma.column.updateMany({
+    await prisma.$transaction(async tx => {
+        await tx.column.update({
+            where: { id: columnId },
+            data: { order: tempOrder },
+        });
+
+        if (from > to) {
+            await tx.column.updateMany({
                 where: {
-                    id: columnId,
+                    projectId: column.projectId,
                     order: {
                         gte: to,
                         lt: from,
@@ -113,13 +129,11 @@ async function reorderColumn(
                 data: {
                     order: { increment: 1 },
                 },
-            }),
-        );
-    } else {
-        operations.push(
-            prisma.column.updateMany({
+            });
+        } else {
+            await tx.column.updateMany({
                 where: {
-                    id: columnId,
+                    projectId: column.projectId,
                     order: {
                         gt: from,
                         lte: to,
@@ -128,18 +142,14 @@ async function reorderColumn(
                 data: {
                     order: { decrement: 1 },
                 },
-            }),
-        );
-    }
+            });
+        }
 
-    operations.push(
-        prisma.column.update({
+        await tx.column.update({
             where: { id: columnId },
             data: { order: to },
-        }),
-    );
-
-    await prisma.$transaction(operations);
+        });
+    });
 }
 
 export default {
