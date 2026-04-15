@@ -21,9 +21,16 @@ import {
 } from "@/components/ui/sidebar";
 import { Spinner } from "@/components/ui/spinner";
 import { queryClient } from "@/lib/client";
-import { useCurrentProject, useGetAllProjects } from "@/queries/projects.query";
+import {
+    currentProjectOptions,
+    getAllProjectsOptions,
+} from "@/queries/projects.query";
 import { loggedIn } from "@/stores/credentials";
-import { QueryClientProvider } from "@tanstack/react-query";
+import {
+    QueryClientProvider,
+    useQueries,
+    useQuery,
+} from "@tanstack/react-query";
 import {
     createFileRoute,
     Link,
@@ -73,7 +80,9 @@ function Project({
 }
 
 function Projects() {
-    const { isPending, isError, error, data } = useGetAllProjects();
+    const { isPending, isError, error, data } = useQuery(
+        getAllProjectsOptions(),
+    );
 
     if (isPending) {
         return <span>Loading...</span>;
@@ -115,7 +124,9 @@ function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 }
 
 function ProjectNameFromId({ projectId }: { projectId: string }) {
-    const { isPending, isError, error, data } = useCurrentProject(projectId);
+    const { isPending, isError, error, data } = useQuery(
+        currentProjectOptions(projectId),
+    );
 
     if (isPending) {
         return <Spinner />;
