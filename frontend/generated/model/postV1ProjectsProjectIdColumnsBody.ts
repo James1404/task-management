@@ -9,5 +9,4 @@
 export type PostV1ProjectsProjectIdColumnsBody = {
   /** @minLength 3 */
   name: string;
-  order: number;
 };

@@ -9,5 +9,4 @@
 export type PatchV1ColumnsColumnIdBody = {
   /** @minLength 3 */
   name?: string;
-  order?: number;
 };

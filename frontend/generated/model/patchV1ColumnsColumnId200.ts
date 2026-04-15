@@ -8,8 +8,8 @@
 
 export type PatchV1ColumnsColumnId200 = {
   id: string;
+  order: number;
 } & {
   /** @minLength 3 */
   name: string;
-  order: number;
 };

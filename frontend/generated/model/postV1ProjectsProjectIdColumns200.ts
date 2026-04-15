@@ -8,8 +8,8 @@
 
 export type PostV1ProjectsProjectIdColumns200 = {
   id: string;
+  order: number;
 } & {
   /** @minLength 3 */
   name: string;
-  order: number;
 };

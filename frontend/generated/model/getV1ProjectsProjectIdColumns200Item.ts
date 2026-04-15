@@ -8,8 +8,8 @@
 
 export type GetV1ProjectsProjectIdColumns200Item = {
   id: string;
+  order: number;
 } & {
   /** @minLength 3 */
   name: string;
-  order: number;
 };
