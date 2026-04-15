@@ -62,9 +62,9 @@ export async function createEmptyProject(body: ProjectDataSchemaType) {
 export async function createBasicProject(body: ProjectDataSchemaType) {
     const project = await createEmptyProject(body);
 
-    await createColumn(project.id, { name: "ToDo", order: 1 });
-    await createColumn(project.id, { name: "In Progress", order: 2 });
-    await createColumn(project.id, { name: "Finished", order: 3 });
+    await createColumn(project.id, { name: "ToDo" });
+    await createColumn(project.id, { name: "In Progress" });
+    await createColumn(project.id, { name: "Finished" });
 
     return project;
 }
