@@ -4,9 +4,27 @@ import { NotFoundError, UnauthorizedError } from "@/utils/error.ts";
 import { ColumnID } from "../schemas/column.schema.ts";
 import { clamp } from "../utils/math.ts";
 
+const startIndex = 0;
+
+async function checkUserPermission(
+    user: User,
+    columnId: ColumnID,
+    prisma: PrismaClient,
+) {
+    const column = await prisma.column.findFirst({
+        where: { project: { ownerId: user.sub } },
+    });
+
+    if (column === null) {
+        throw new UnauthorizedError();
+    }
+}
+
 async function getColumn(user: User, columnId: string, prisma: PrismaClient) {
+    await checkUserPermission(user, columnId, prisma);
+
     const column = await prisma.column.findUnique({
-        where: { id: columnId, project: { ownerId: user.sub } },
+        where: { id: columnId },
     });
 
     if (column == null) {
@@ -34,13 +52,20 @@ async function getColumnTasks(
     });
 }
 
-type Create = Omit<Column, "id" | "projectId">;
+type Create = Omit<Column, "id" | "projectId" | "order">;
 async function createColumn(
     user: User,
     projectId: string,
     details: Create,
     prisma: PrismaClient,
 ) {
+    const lastColumn = await prisma.column.findFirst({
+        where: { projectId },
+        orderBy: { order: "desc" },
+    });
+
+    const order = lastColumn ? lastColumn.order + 1 : startIndex;
+
     return await prisma.column.create({
         data: {
             project: {
@@ -48,6 +73,7 @@ async function createColumn(
                     id: projectId,
                 },
             },
+            order,
             ...details,
         },
     });
@@ -103,9 +129,9 @@ async function reorderColumn(
         orderBy: { order: "desc" },
     });
 
-    const lastColumnOrder = lastColumn ? lastColumn.order : 1;
+    const lastColumnOrder = lastColumn ? lastColumn.order : startIndex;
 
-    to = clamp(to, 1, lastColumnOrder);
+    to = clamp(to, startIndex, lastColumnOrder);
 
     if (from === to) return;
 

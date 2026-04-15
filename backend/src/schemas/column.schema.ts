@@ -15,7 +15,6 @@ export type ColumnParamsType = Static<typeof ColumnParams>;
 export type ColumnDataSchemaType = Static<typeof ColumnDataSchema>;
 export const ColumnDataSchema = Type.Object({
     name: Type.String({ minLength: 3 }),
-    order: ColumnOrderSchema,
 });
 
 export type ColumnUpdateSchemaType = Static<typeof ColumnUpdateSchema>;
@@ -25,6 +24,7 @@ export type ColumnFullSchemaType = Static<typeof ColumnFullSchema>;
 export const ColumnFullSchema = Type.Intersect([
     Type.Object({
         id: Type.String(),
+        order: ColumnOrderSchema,
     }),
     ColumnDataSchema,
 ]);

@@ -6,6 +6,9 @@ import { ColumnID } from "../schemas/column.schema.ts";
 import { TaskID } from "../schemas/tasks.schema.ts";
 import { clamp } from "../utils/math.ts";
 
+const startIndex = 0;
+const parkingIndex = -1;
+
 async function getTask(id: TaskID, user: User, prisma: PrismaClient) {
     // TODO: Check user permissions
 
@@ -43,9 +46,7 @@ async function createTask(
         orderBy: { order: "desc" },
     });
 
-    console.log(lastTask);
-
-    const order = lastTask ? lastTask.order + 1 : 1;
+    const order = lastTask ? lastTask.order + 1 : startIndex;
 
     return await prisma.task.create({
         data: {
@@ -137,18 +138,16 @@ async function reorderTask(
         orderBy: { order: "desc" },
     });
 
-    const lastTaskOrder = lastTask ? lastTask.order : 1;
+    const lastTaskOrder = lastTask ? lastTask.order : startIndex;
 
-    to = clamp(to, 1, lastTaskOrder);
+    to = clamp(to, startIndex, lastTaskOrder);
 
     if (from === to) return;
-
-    const tempOrder = -1; // must be outside normal range
 
     await prisma.$transaction(async tx => {
         await tx.task.update({
             where: { id: taskId },
-            data: { order: tempOrder },
+            data: { order: parkingIndex },
         });
 
         if (from > to) {
@@ -210,18 +209,16 @@ async function moveTaskToColumn(
         orderBy: { order: "desc" },
     });
 
-    console.log(lastTask);
-
-    const order = lastTask ? lastTask.order + 1 : 1;
+    const order = lastTask ? lastTask.order + 1 : startIndex;
 
     return await prisma.$transaction(async tx => {
-        const result = await tx.task.update({
+        await tx.task.update({
             where: {
                 id: taskId,
             },
             data: {
                 columnId,
-                order,
+                order: parkingIndex,
             },
         });
 
@@ -237,7 +234,10 @@ async function moveTaskToColumn(
             },
         });
 
-        return result;
+        return await tx.task.update({
+            where: { id: taskId },
+            data: { order },
+        });
     });
 }
 
