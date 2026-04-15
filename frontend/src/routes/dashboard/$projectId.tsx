@@ -26,16 +26,16 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import {
-    useGetAllColumns,
-    useGetColumn,
-    useGetColumnTasks,
-    useReorderColumns,
+    getAllColumnsOptions,
+    getColumnOptions,
+    getColumnTasksOptions,
+    reorderColumnsOptions,
 } from "@/queries/columns.query";
 import {
-    useCreateTask,
-    useDeleteTask,
-    useMoveTask,
-    useReorderTask,
+    createTaskOptions,
+    deleteTaskOptions,
+    moveTaskOptions,
+    reorderTaskOptions,
 } from "@/queries/tasks.query";
 import type { ColumnID, ColumnSchemaType } from "@/schemas/columns.schema";
 import {
@@ -57,11 +57,7 @@ import {
 } from "lucide-react";
 import { Fragment, useRef, useState } from "react";
 import { Controller, useForm, type SubmitHandler } from "react-hook-form";
-import {
-    DragDropProvider,
-    useDroppable,
-    type DragEndEvent,
-} from "@dnd-kit/react";
+import { DragDropProvider, type DragEndEvent } from "@dnd-kit/react";
 import { isSortable, useSortable } from "@dnd-kit/react/sortable";
 import { RestrictToHorizontalAxis } from "@dnd-kit/abstract/modifiers";
 import { cn } from "@/lib/utils";
@@ -74,10 +70,7 @@ import {
     EmptyTitle,
 } from "@/components/ui/empty";
 import { CreateProjectDialog } from "@/components/create-project-dialog";
-import {
-    useCurrentProject,
-    useCurrentProjectOptions,
-} from "@/queries/projects.query";
+import { currentProjectOptions } from "@/queries/projects.query";
 import { CollisionPriority } from "@dnd-kit/abstract";
 import {
     DropdownMenu,
@@ -87,11 +80,12 @@ import {
     DropdownMenuLabel,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/dashboard/$projectId")({
     async loader({ params: { projectId } }) {
         try {
-            await queryClient.fetchQuery(useCurrentProjectOptions(projectId));
+            await queryClient.fetchQuery(currentProjectOptions(projectId));
         } catch (err) {
             throw notFound({ data: err });
         }
@@ -115,7 +109,7 @@ function CreateTaskDialog({
         },
     });
 
-    const mutation = useCreateTask(columnId);
+    const mutation = useMutation(createTaskOptions(columnId));
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const onSubmit: SubmitHandler<TaskCreateSchemaType> = async formData => {
@@ -201,8 +195,8 @@ type DraggableType = {
 function DropdownMenuColumns(task: TaskSchemaType) {
     const { projectId } = Route.useParams();
 
-    const { status, error, data } = useGetAllColumns(projectId);
-    const moveMutation = useMoveTask();
+    const { status, data } = useQuery(getAllColumnsOptions(projectId));
+    const moveMutation = useMutation(moveTaskOptions());
 
     const moveTo = async (columnId: ColumnID) => {
         console.log("hello world, move to whater");
@@ -232,13 +226,13 @@ function DropdownMenuColumns(task: TaskSchemaType) {
 function Task(task: TaskSchemaType) {
     const { description, title, id, columnId, order } = task;
 
-    const mutation = useDeleteTask(columnId, id);
+    const mutation = useMutation(deleteTaskOptions(columnId, id));
 
     const onClick = async () => {
         await mutation.mutateAsync();
     };
 
-    const reorderMutation = useReorderTask();
+    const reorderMutation = useMutation(reorderTaskOptions());
 
     const moveUp = async () => {
         await reorderMutation.mutate({ task, order: order - 1 });
@@ -254,7 +248,7 @@ function Task(task: TaskSchemaType) {
             index: order,
             group: columnId,
             type: "task",
-            accept: ["task"],
+            accept: "task",
             data: { task },
         });
 
@@ -269,16 +263,12 @@ function Task(task: TaskSchemaType) {
         transition-all`,
         !isDragging && "border-transparent",
         isDragging && "shadow-md",
-        isDropTarget && "bg-blue-300",
-        isDragSource && "bg-red-300",
     );
 
     return (
-        <div className={className} ref={ref}>
+        <div className={className} ref={ref as any}>
             <div className="grow">
-                <h3>
-                    {title} - {order}
-                </h3>
+                <h3>{title}</h3>
             </div>
             <p>{description}</p>
 
@@ -289,8 +279,6 @@ function Task(task: TaskSchemaType) {
             <Button variant="ghost" ref={handleRef}>
                 <GripVertical />
             </Button>
-
-            <span className="px-4 py-2">{order}</span>
 
             <div className="flex flex-col gap-1">
                 <Button variant="ghost" onClick={moveUp}>
@@ -319,7 +307,7 @@ function Task(task: TaskSchemaType) {
 }
 
 function Tasks({ columnId }: { columnId: string }) {
-    const { status, error, data } = useGetColumnTasks(columnId);
+    const { status, error, data } = useQuery(getColumnTasksOptions(columnId));
 
     if (status === "pending") {
         return <Spinner />;
@@ -339,18 +327,18 @@ function Tasks({ columnId }: { columnId: string }) {
 }
 
 function Column({ id, order }: ColumnSchemaType) {
-    const { status, error, data } = useGetColumn(id);
+    const { status, error, data } = useQuery(getColumnOptions(id));
 
     const { ref, handleRef } = useSortable({
         id,
         index: order,
         type: "column",
-        accept: ["column", "task"],
+        accept: ["task", "column"],
         collisionPriority: CollisionPriority.Low,
         modifiers: [RestrictToHorizontalAxis],
     });
 
-    const reorderMutation = useReorderColumns();
+    const reorderMutation = useMutation(reorderColumnsOptions());
 
     const moveLeft = async () => {
         await reorderMutation.mutate({ columnId: id, order: order - 1 });
@@ -424,10 +412,11 @@ function CreateColumn({}: { columnId: ColumnID | undefined }) {
 function Columns() {
     const { projectId } = Route.useParams();
 
-    const { status, error, data } = useGetAllColumns(projectId);
+    const { status, error, data } = useQuery(getAllColumnsOptions(projectId));
 
-    const reorderMutation = useReorderTask();
-    const moveMutation = useMoveTask();
+    const columnReorderMutation = useMutation(reorderColumnsOptions());
+    const taskReorderMutation = useMutation(reorderTaskOptions());
+    const taskMoveMutation = useMutation(moveTaskOptions());
 
     const restrictToElement = useRef(null);
 
@@ -439,41 +428,48 @@ function Columns() {
         return <span>Error: {error.message}</span>;
     }
 
-    const handleDragEnd: DragEndEvent = async ({ operation, canceled }) => {
-        if (canceled) return;
+    const handleDragEnd: DragEndEvent = async event => {
+        if (event.canceled) return;
 
-        const { target, source } = operation;
-
-        if (!target || !source) return;
+        const { source } = event.operation;
 
         if (!isSortable(source)) {
             return;
         }
 
         if (source.type === "task") {
-            if (source.initialGroup == null || source.group == null) return;
-
             if (source.initialGroup === source.group) {
-                console.log(
-                    `Move from ${source.initialIndex} to ${source.index}`,
-                );
+                if (source.initialIndex === source.index) return;
 
-                await reorderMutation.mutateAsync({
+                await taskReorderMutation.mutateAsync({
                     task: source.data.task,
                     order: source.index,
                 });
+
+                // console.log(
+                //     `Dropped ${source.initialGroup} onto ${source.group}, initalIndex ${source.initialIndex} and index ${source.index}`,
+                // );
             } else {
-                console.log("cangr group to ");
+                if (!source.initialGroup || !source.group) return;
 
-                // await moveMutation.mutateAsync({
-                //     task: source.data.task,
-                //     columnId: source.group!.toString(),
-                // });
+                // console.log("cangr group to ");
+
+                await taskMoveMutation.mutateAsync({
+                    task: source.data.task,
+                    columnId: source.group.toString(),
+                });
             }
+        } else {
+            if (source.initialIndex !== source.index) {
+                console.log(
+                    `move column from ${source.initialIndex} to ${source.index}`,
+                );
 
-            console.log(
-                `Dropped ${source.initialGroup} onto ${source.group}, initalIndex ${source.initialIndex} and index ${source.index}`,
-            );
+                await columnReorderMutation.mutateAsync({
+                    columnId: source.id.toString(),
+                    order: source.index,
+                });
+            }
         }
     };
 
@@ -484,6 +480,9 @@ function Columns() {
         >
             <DragDropProvider<DraggableType>
                 onDragEnd={handleDragEnd}
+                onDragOver={event => {
+                    event.preventDefault();
+                }}
                 // modifiers={[
                 //     RestrictToElement.configure({
                 //         element: restrictToElement.current,
@@ -491,7 +490,7 @@ function Columns() {
                 // ]}
             >
                 <div className="h-full flex space-x-2 px-4 w-fit">
-                    {data.map((col, idx) => (
+                    {data.map(col => (
                         <Fragment key={col.id}>
                             <CreateColumn columnId={col.id} />
                             <Column {...col} />
@@ -505,7 +504,7 @@ function Columns() {
 
 function CurrentProject() {
     const { projectId } = Route.useParams();
-    const { status, error } = useCurrentProject(projectId);
+    const { status, error } = useQuery(currentProjectOptions(projectId));
 
     if (status === "pending") {
         return <Spinner />;
