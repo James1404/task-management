@@ -1,4 +1,3 @@
-import { useCreateProject } from "@/queries/projects.query";
 import {
     ProjectDataSchema,
     type ProjectDataSchemaType,
@@ -21,6 +20,8 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "./ui/field";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { useNavigate } from "@tanstack/react-router";
+import { createProjectOptions } from "@/queries/projects.query";
+import { useMutation } from "@tanstack/react-query";
 
 export function CreateProjectDialog({
     children,
@@ -36,7 +37,7 @@ export function CreateProjectDialog({
         },
     });
 
-    const mutation = useCreateProject();
+    const mutation = useMutation(createProjectOptions());
 
     const [dialogOpen, setDialogOpen] = useState(false);
     const onSubmit: SubmitHandler<ProjectDataSchemaType> = async formData => {

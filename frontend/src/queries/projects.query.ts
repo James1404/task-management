@@ -8,13 +8,12 @@ import type {
     ProjectID,
 } from "@/schemas/project.schema";
 import {
+    mutationOptions,
     queryOptions,
-    useMutation,
-    useQuery,
     useQueryClient,
 } from "@tanstack/react-query";
 
-export function useCurrentProjectOptions(projectId: ProjectID) {
+export function currentProjectOptions(projectId: ProjectID) {
     return queryOptions({
         queryKey: ["currentProject", projectId],
         queryFn: async () => getProject(projectId),
@@ -22,21 +21,17 @@ export function useCurrentProjectOptions(projectId: ProjectID) {
     });
 }
 
-export function useCurrentProject(projectId: ProjectID) {
-    return useQuery(useCurrentProjectOptions(projectId));
-}
-
-export function useGetAllProjects() {
-    return useQuery({
+export function getAllProjectsOptions() {
+    return queryOptions({
         queryKey: ["projects"],
         queryFn: async () => await getProjects(),
     });
 }
 
-export function useCreateProject() {
+export function createProjectOptions() {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return mutationOptions({
         mutationFn: async (body: ProjectDataSchemaType) =>
             await createBasicProject(body),
         onSuccess: async () =>

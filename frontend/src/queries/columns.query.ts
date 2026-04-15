@@ -11,36 +11,54 @@ import type {
     OrderType,
 } from "@/schemas/columns.schema";
 import type { ProjectID } from "@/schemas/project.schema";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+    mutationOptions,
+    queryOptions,
+    useQueryClient,
+} from "@tanstack/react-query";
+import { createQueryKeys } from "@lukemorales/query-key-factory";
 
-export function useGetAllColumns(projectId: ProjectID) {
-    return useQuery({
+const queries = createQueryKeys("columns", {
+    all: ["columns"],
+    detail: (columnId: ColumnID) => ({
+        queryKey: [columnId],
+        contextQueries: {
+            tasks: {},
+        },
+    }),
+    list: () => ({
+        queryKey: [""],
+    }),
+});
+
+export function getAllColumnsOptions(projectId: ProjectID) {
+    return queryOptions({
         queryKey: ["columns"],
         queryFn: async () => await getAllColumns(projectId),
         staleTime: 2 * 60 * 1000,
     });
 }
 
-export function useGetColumn(columnId: ColumnID) {
-    return useQuery({
+export function getColumnOptions(columnId: ColumnID) {
+    return queryOptions({
         queryKey: ["columns", columnId],
         queryFn: async () => await getColumn(columnId),
         staleTime: 2 * 60 * 1000,
     });
 }
 
-export function useGetColumnTasks(columnId: ColumnID) {
-    return useQuery({
+export function getColumnTasksOptions(columnId: ColumnID) {
+    return queryOptions({
         queryKey: ["columns", columnId, "tasks"],
         queryFn: async () => await getAllTasks(columnId),
         staleTime: 2 * 60 * 1000,
     });
 }
 
-export function useReorderColumns() {
+export function reorderColumnsOptions() {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return mutationOptions({
         mutationFn: async ({
             columnId,
             order,
@@ -56,10 +74,10 @@ export function useReorderColumns() {
     });
 }
 
-export function useCreateColumns(columnId: ColumnID) {
+export function useCreateColumnsOptions(columnId: ColumnID) {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return mutationOptions({
         mutationFn: async (body: ColumnDataSchemaType) =>
             await createColumn(columnId, body),
         onSuccess: async () =>

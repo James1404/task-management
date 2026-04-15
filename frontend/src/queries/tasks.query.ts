@@ -11,20 +11,24 @@ import type {
     TaskID,
     TaskSchemaType,
 } from "@/schemas/task.schema";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+    mutationOptions,
+    queryOptions,
+    useQueryClient,
+} from "@tanstack/react-query";
 
-export function useGetTasks(columnId: ColumnID) {
-    return useQuery({
+export function getTasksOptions(columnId: ColumnID) {
+    return queryOptions({
         queryKey: ["columns", columnId, "tasks"],
         queryFn: async () => await getAllTasks(columnId),
         staleTime: 2 * 60 * 1000,
     });
 }
 
-export function useCreateTask(columnId: ColumnID) {
+export function createTaskOptions(columnId: ColumnID) {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return mutationOptions({
         mutationFn: async (body: TaskCreateSchemaType) =>
             await createTask(columnId, body),
         onSuccess: async () =>
@@ -34,10 +38,10 @@ export function useCreateTask(columnId: ColumnID) {
     });
 }
 
-export function useMoveTask() {
+export function moveTaskOptions() {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return mutationOptions({
         mutationFn: async ({
             task: { id },
             columnId,
@@ -49,28 +53,25 @@ export function useMoveTask() {
             await context.client.cancelQueries({
                 queryKey: ["columns", variables.columnId, "tasks"],
             });
-
             const previousTasks = context.client.getQueryData([
                 "columns",
                 variables.columnId,
                 "tasks",
             ]);
-
             if (variables.task.columnId === variables.columnId) {
                 return;
             }
-
             context.client.setQueryData(
-                ["columns", variables.task.columnId, "tasks"],
-                (old: any[]) =>
-                    old.filter(item => item.id !== variables.task.id),
+                getTasksOptions(variables.columnId).queryKey,
+                old =>
+                    old
+                        ? old.filter(item => item.id !== variables.task.id)
+                        : [],
             );
-
             context.client.setQueryData(
-                ["columns", variables.columnId, "tasks"],
-                (old: any) => [...old, variables.task],
+                getTasksOptions(variables.columnId).queryKey,
+                old => (old ? [...old, variables.task] : []),
             );
-
             return { previousTasks };
         },
         async onSettled(_data, _error, variables) {
@@ -85,10 +86,10 @@ export function useMoveTask() {
     });
 }
 
-export function useReorderTask() {
+export function reorderTaskOptions() {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return mutationOptions({
         mutationFn: async ({
             task: { id },
             order,
@@ -100,19 +101,20 @@ export function useReorderTask() {
             await context.client.cancelQueries({
                 queryKey: ["columns", variables.task.columnId, "tasks"],
             });
-
             const previousTasks = context.client.getQueryData([
                 "columns",
                 variables.task.columnId,
                 "tasks",
             ]);
-
             context.client.setQueryData(
                 ["columns", variables.task.columnId, "tasks"],
-                (old: any[]) =>
-                    old.filter(item => item.id !== variables.task.id),
+                (old: any[]) => {
+                    const newTasks = [...old];
+                    const [removed] = newTasks.splice(variables.task.order, 1);
+                    newTasks.splice(variables.order, 0, removed);
+                    return newTasks;
+                },
             );
-
             return { previousTasks };
         },
         async onSettled(_data, _error, variables) {
@@ -123,10 +125,10 @@ export function useReorderTask() {
     });
 }
 
-export function useDeleteTask(columnId: ColumnID, taskId: TaskID) {
+export function deleteTaskOptions(columnId: ColumnID, taskId: TaskID) {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return mutationOptions({
         mutationFn: async () => await deleteTask(taskId),
         onSuccess: async () =>
             await queryClient.invalidateQueries({
