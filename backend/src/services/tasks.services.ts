@@ -5,15 +5,14 @@ import { ForbiddenError, NotFoundError } from "../utils/error.ts";
 import { ColumnID } from "../schemas/column.schema.ts";
 import { TaskID } from "../schemas/tasks.schema.ts";
 import { clamp } from "../utils/math.ts";
+import projectsServices from "./projects.services.ts";
 
 const startIndex = 0;
 const parkingIndex = -1;
 
 async function getTask(id: TaskID, user: User, prisma: PrismaClient) {
-    // TODO: Check user permissions
-
     const task = await prisma.task.findUnique({
-        where: { id },
+        where: { id, column: { project: { userId: user.sub } } },
         include: { column: true },
     });
 
@@ -37,12 +36,10 @@ async function createTask(
     details: Create,
     prisma: PrismaClient,
 ) {
-    // TODO: Check user permissions
-
-    await columnServices.getColumn(user, columnId, prisma);
+    const { project } = await columnServices.getColumn(user, columnId, prisma);
 
     const lastTask = await prisma.task.findFirst({
-        where: { columnId },
+        where: { columnId, column: { project: { userId: user.sub } } },
         orderBy: { order: "desc" },
     });
 
@@ -53,6 +50,11 @@ async function createTask(
             title: details.title,
             description: details.description,
             column: { connect: { id: columnId } },
+            project: {
+                connect: {
+                    id: project.id,
+                },
+            },
             order,
         },
     });
@@ -61,7 +63,13 @@ async function createTask(
 type Update = Partial<
     Omit<
         Task,
-        "id" | "projectId" | "order" | "createdAt" | "updatedAt" | "columnId"
+        | "id"
+        | "projectId"
+        | "order"
+        | "createdAt"
+        | "updatedAt"
+        | "columnId"
+        | "userId"
     >
 >;
 
@@ -71,11 +79,21 @@ async function updateTask(
     details: Update,
     prisma: PrismaClient,
 ) {
-    // TODO: Check user permissions
+    const task = await prisma.task.findUnique({ where: { id: taskId } });
+
+    if (task === null) {
+        throw new NotFoundError("Task not found");
+    }
+
+    await projectsServices.checkPermission(
+        user,
+        { projectId: task.projectId },
+        prisma,
+    );
 
     // KNOWLEDGE: Updating fields to "undefined" doesnt change them.
     return await prisma.task.update({
-        where: { id: taskId, column: { project: { ownerId: user.sub } } },
+        where: { id: taskId },
         data: { ...details },
     });
 }
@@ -85,20 +103,13 @@ async function deleteTask(user: User, taskId: TaskID, prisma: PrismaClient) {
 
     const task = await prisma.task.findUnique({
         where: { id: taskId },
-        include: {
-            column: {
-                include: { project: true },
-            },
-        },
     });
 
-    if (task == null) {
+    if (task === null) {
         throw new NotFoundError("Task not found");
     }
 
-    if (task.column.project.ownerId != user.sub) {
-        throw new ForbiddenError();
-    }
+    await projectsServices.checkPermission(user, task, prisma);
 
     await prisma.$transaction([
         prisma.task.delete({ where: { id: taskId } }),
@@ -124,12 +135,21 @@ async function reorderTask(
     // TODO: Check user permissions
 
     const task = await prisma.task.findFirst({
-        where: { id: taskId },
+        where: {
+            id: taskId,
+            column: { project: { userId: user.sub } },
+        },
     });
 
-    if (!task) {
-        throw new NotFoundError();
+    if (task === null) {
+        throw new NotFoundError("Task not found");
     }
+
+    await projectsServices.checkPermission(
+        user,
+        { projectId: task.projectId },
+        prisma,
+    );
 
     const from = task.order;
 
@@ -193,12 +213,21 @@ async function moveTaskToColumn(
 ) {
     // TODO: Check user permissions
     const task = await prisma.task.findFirst({
-        where: { id: taskId },
+        where: {
+            id: taskId,
+            column: { project: { userId: user.sub } },
+        },
     });
 
-    if (!task) {
-        throw new NotFoundError();
+    if (task === null) {
+        throw new NotFoundError("Task not found");
     }
+
+    await projectsServices.checkPermission(
+        user,
+        { projectId: task.projectId },
+        prisma,
+    );
 
     if (task.columnId === columnId) {
         return;

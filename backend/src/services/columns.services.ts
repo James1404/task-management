@@ -1,28 +1,18 @@
 import { Column, PrismaClient } from "../../generated/prisma/client.ts";
 import { User } from "@/plugins/auth.plugin.ts";
-import { NotFoundError, UnauthorizedError } from "@/utils/error.ts";
+import {
+    ForbiddenError,
+    NotFoundError,
+    UnauthorizedError,
+} from "@/utils/error.ts";
 import { ColumnID } from "../schemas/column.schema.ts";
 import { clamp } from "../utils/math.ts";
+import { ProjectID } from "../schemas/projects.schema.ts";
+import projectsServices from "./projects.services.ts";
 
 const startIndex = 0;
 
-async function checkUserPermission(
-    user: User,
-    columnId: ColumnID,
-    prisma: PrismaClient,
-) {
-    const column = await prisma.column.findFirst({
-        where: { project: { ownerId: user.sub } },
-    });
-
-    if (column === null) {
-        throw new UnauthorizedError();
-    }
-}
-
-async function getColumn(user: User, columnId: string, prisma: PrismaClient) {
-    await checkUserPermission(user, columnId, prisma);
-
+async function getColumn(user: User, columnId: ColumnID, prisma: PrismaClient) {
     const column = await prisma.column.findUnique({
         where: { id: columnId },
     });
@@ -31,34 +21,47 @@ async function getColumn(user: User, columnId: string, prisma: PrismaClient) {
         throw new UnauthorizedError("Project does not exist with ID");
     }
 
-    return column;
-}
+    const project = await projectsServices.checkPermission(
+        user,
+        column,
+        prisma,
+    );
 
-async function getAllColumns(user: User, prisma: PrismaClient) {
-    return await prisma.column.findMany({
-        where: { project: { ownerId: user.sub } },
-        orderBy: { order: "asc" },
-    });
+    return { column, project };
 }
 
 async function getColumnTasks(
     user: User,
-    columnId: string,
+    columnId: ColumnID,
     prisma: PrismaClient,
 ) {
+    const column = await prisma.column.findUnique({ where: { id: columnId } });
+
+    if (column === null) {
+        throw new NotFoundError("Column not found");
+    }
+
+    await projectsServices.checkPermission(
+        user,
+        { projectId: column.projectId },
+        prisma,
+    );
+
     return await prisma.task.findMany({
         where: { columnId },
         orderBy: { order: "asc" },
     });
 }
 
-type Create = Omit<Column, "id" | "projectId" | "order">;
+type Create = Omit<Column, "id" | "projectId" | "order" | "userId">;
 async function createColumn(
     user: User,
-    projectId: string,
+    projectId: ProjectID,
     details: Create,
     prisma: PrismaClient,
 ) {
+    await projectsServices.checkPermission(user, { projectId }, prisma);
+
     const lastColumn = await prisma.column.findFirst({
         where: { projectId },
         orderBy: { order: "desc" },
@@ -82,10 +85,18 @@ async function createColumn(
 type Update = Partial<Omit<Column, "id" | "projectId">>;
 async function updateColumn(
     user: User,
-    columnId: string,
+    columnId: ColumnID,
     details: Update,
     prisma: PrismaClient,
 ) {
+    const column = await prisma.column.findUnique({ where: { id: columnId } });
+
+    if (column === null) {
+        throw new NotFoundError("Column not found");
+    }
+
+    await projectsServices.checkPermission(user, column, prisma);
+
     return await prisma.column.update({
         where: {
             id: columnId,
@@ -98,9 +109,17 @@ async function updateColumn(
 
 async function deleteColumn(
     user: User,
-    columnId: string,
+    columnId: ColumnID,
     prisma: PrismaClient,
 ) {
+    const column = await prisma.column.findUnique({ where: { id: columnId } });
+
+    if (column === null) {
+        throw new NotFoundError("Column not found");
+    }
+
+    await projectsServices.checkPermission(user, column, prisma);
+
     return await prisma.column.delete({
         where: { id: columnId },
     });
@@ -118,9 +137,11 @@ async function reorderColumn(
         where: { id: columnId },
     });
 
-    if (!column) {
-        throw new NotFoundError();
+    if (column === null) {
+        throw new NotFoundError("Column not found");
     }
+
+    await projectsServices.checkPermission(user, column, prisma);
 
     const from = column.order;
 
@@ -180,7 +201,6 @@ async function reorderColumn(
 
 export default {
     getColumn,
-    getAllColumns,
     getColumnTasks,
     createColumn,
     updateColumn,
