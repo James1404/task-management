@@ -2,6 +2,9 @@ import Type, { Static } from "typebox";
 import { Prisma } from "../../generated/prisma/browser.ts";
 import { Project as PrismaProject } from "../../generated/prisma/client.ts";
 
+export const ProjectIDSchema = Type.String();
+export type ProjectID = Static<typeof ProjectIDSchema>;
+
 export const ProjectParams = Type.Object({
     projectId: Type.String(),
 });
@@ -25,7 +28,7 @@ export type ProjectSchemaType = Static<typeof ProjectSchema>;
 export const ProjectSchema = Type.Intersect([
     ProjectDataSchema,
     Type.Object({
-        id: Type.String(),
+        id: ProjectIDSchema,
     }),
 ]);
 
