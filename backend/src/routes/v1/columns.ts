@@ -40,13 +40,13 @@ export default async function routes(
             },
         },
         async (request, reply) => {
-            const column = await columnsServices.getColumn(
+            const result = await columnsServices.getColumn(
                 request.user,
                 request.params.columnId,
                 fastify.prisma,
             );
 
-            return ColumnPrismaMap(column);
+            return ColumnPrismaMap(result.column);
         },
     );
 

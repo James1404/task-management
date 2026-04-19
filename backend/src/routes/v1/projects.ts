@@ -42,7 +42,7 @@ export default async function routes(
         },
         async (request, reply) => {
             const projectRows = await fastify.prisma.project.findMany({
-                where: { ownerId: request.user.sub },
+                where: { userId: request.user.sub },
             });
 
             reply.code(200);
@@ -90,7 +90,7 @@ export default async function routes(
             const project = await fastify.prisma.project.findUnique({
                 where: {
                     id: request.params.projectId,
-                    ownerId: request.user.sub,
+                    userId: request.user.sub,
                 },
                 include: { columns: true },
             });
