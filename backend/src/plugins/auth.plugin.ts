@@ -60,7 +60,7 @@ const authPlugin: FastifyPluginAsync = fp(async (server, _options) => {
 
         const [bearer, auth] = authHeader.split(" ", 2);
 
-        if (bearer != "Bearer") {
+        if (bearer !== "Bearer") {
             throw new UnauthorizedError(
                 'Only "Bearer" token authentication is valid',
             );
@@ -68,7 +68,7 @@ const authPlugin: FastifyPluginAsync = fp(async (server, _options) => {
 
         const token = decode(auth);
 
-        if (token == null) {
+        if (token === null) {
             throw new UnauthorizedError("Invalid token");
         }
 
@@ -80,7 +80,7 @@ const authPlugin: FastifyPluginAsync = fp(async (server, _options) => {
             where: { id: token.payload.sub },
         });
 
-        if (user == null) {
+        if (user === null) {
             throw new UnauthorizedError();
         }
 
