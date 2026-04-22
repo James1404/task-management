@@ -20,7 +20,7 @@ interface JWT {
     payload: Payload;
 }
 
-const secret = Deno.env.get("JWT_SECRET") ?? "unknown";
+const secret = Deno.env.get("TASKS_JWT_SECRET") ?? "unknown";
 
 function genSignature(headerbuf: string, payloadbuf: string): string {
     return createHmac("sha256", secret)

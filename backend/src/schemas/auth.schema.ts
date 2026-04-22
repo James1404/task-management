@@ -5,9 +5,6 @@ import {
     UserDataSchema,
 } from "./account.schema.ts";
 
-export const UserIdSchema = Type.Number();
-export type UserId = Static<typeof UserIdSchema>;
-
 export const AccessTokenSchema = Type.Object({
     access: Type.String(),
 });

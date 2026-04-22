@@ -2,7 +2,7 @@
 // npm install --save-dev prisma dotenv
 import { defineConfig } from "prisma/config";
 
-const url = Deno.env.get("DATABASE_URL");
+const url = Deno.env.get("TASKS_DATABASE_URL");
 
 if (url == null) {
     throw new Error("Cannot find DATABASE_URL");
