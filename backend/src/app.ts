@@ -102,7 +102,9 @@ await fastify.register(import("@fastify/swagger-ui"), {
     transformSpecificationClone: true,
 });
 
-fastify.setErrorHandler((error, _request, reply) => {
+fastify.setErrorHandler((error, request, reply) => {
+    request.log.error(error);
+
     if (error instanceof AppError) {
         if (error.clearAuthCookie) {
             reply.clearCookie("refreshToken", {
