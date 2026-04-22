@@ -6,16 +6,37 @@ import accountServices from "@/services/account.services.ts";
 import {
     DeleteUserSchema,
     DeleteUserSchemaType,
+    UserDataSchemaType,
+    UserFullSchema,
+    UserFullSchemaType,
+    UserPrismaMap,
     UserUpdateSchema,
     UserUpdateSchemaType,
-} from "../../schemas/account.schema.ts";
-import { UserDataSchemaType } from "../../schemas/auth.schema.ts";
+} from "@/schemas/account.schema.ts";
 
 export default async function routes(
     fastify: FastifyInstance,
     _options: object,
 ) {
     await fastify.register(authPlugin);
+
+    fastify.get<{ Reply: UserFullSchemaType }>(
+        "/",
+        {
+            schema: {
+                response: { 200: UserFullSchema },
+                description: "Get user information",
+            },
+        },
+        async (request, reply) => {
+            const user = await accountServices.getAccount(
+                request.user,
+                fastify.prisma,
+            );
+
+            return reply.code(200).send(UserPrismaMap(user));
+        },
+    );
 
     fastify.post<{ Body: DeleteUserSchemaType }>(
         "/delete",

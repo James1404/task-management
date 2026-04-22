@@ -31,6 +31,18 @@ async function deleteAccount(
     });
 }
 
+async function getAccount(user: User, prisma: PrismaClient) {
+    const userRow = await prisma.user.findUnique({
+        where: { id: user.sub },
+    });
+
+    if (userRow === null) {
+        throw new InvalidCredentialsError();
+    }
+
+    return userRow;
+}
+
 type RemoveFromUser = {
     id: string;
     email: string;
@@ -66,4 +78,4 @@ async function updateAccount(
     });
 }
 
-export default { deleteAccount, updateAccount };
+export default { deleteAccount, updateAccount, getAccount };
