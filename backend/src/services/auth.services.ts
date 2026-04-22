@@ -107,7 +107,7 @@ interface Login {
     password: string;
 }
 
-async function logout(user: User, refresh: string, prisma: PrismaClient) {
+async function logout(refresh: string, prisma: PrismaClient) {
     const refreshRow = await prisma.refreshToken.findUnique({
         where: {
             token_hash: hashRefreshToken(refresh),
@@ -115,10 +115,6 @@ async function logout(user: User, refresh: string, prisma: PrismaClient) {
     });
 
     if (!refreshRow) {
-        throw new UnauthorizedError();
-    }
-
-    if (refreshRow.userId != user.sub) {
         throw new UnauthorizedError();
     }
 
