@@ -41,7 +41,7 @@ export default function routes(fastify: FastifyInstance, _options: object) {
                 httpOnly: true,
                 secure: true,
                 sameSite: "lax",
-                path: "/v1/auth/refresh",
+                path: "/v1/auth",
             });
 
             return {
@@ -75,7 +75,7 @@ export default function routes(fastify: FastifyInstance, _options: object) {
                 httpOnly: true,
                 secure: true,
                 sameSite: "lax",
-                path: "/v1/auth/refresh",
+                path: "/v1/auth",
             });
 
             return {
@@ -89,7 +89,7 @@ export default function routes(fastify: FastifyInstance, _options: object) {
         {
             schema: {
                 response: {
-                    200: Type.Object({}),
+                    204: Type.Object({}),
                     ...UnauthorizedResponseSchema,
                 },
                 description: "Logout of a session",
@@ -101,50 +101,46 @@ export default function routes(fastify: FastifyInstance, _options: object) {
                 throw new UnauthorizedError("Refresh token missing");
             }
 
-            await authServices.logout(
-                request.user,
-                refreshToken,
-                fastify.prisma,
-            );
+            await authServices.logout(refreshToken, fastify.prisma);
 
             reply.clearCookie("refreshToken", {
-                path: "/v1/auth/refresh",
+                path: "/v1/auth",
             });
 
-            return reply.code(200).send();
+            return reply.code(204).send();
         },
     );
 
-    fastify.post(
-        "/logoutAll",
-        {
-            schema: {
-                response: {
-                    200: Type.Object({}),
-                    ...UnauthorizedResponseSchema,
-                },
-                description: "Logout of all session",
-            },
-        },
-        async (request, reply) => {
-            const refreshToken = request.cookies["refresh"];
-            if (refreshToken == null) {
-                throw new UnauthorizedError("Refresh token missing");
-            }
+    // fastify.post(
+    //     "/logoutAll",
+    //     {
+    //         schema: {
+    //             response: {
+    //                 200: Type.Object({}),
+    //                 ...UnauthorizedResponseSchema,
+    //             },
+    //             description: "Logout of all session",
+    //         },
+    //     },
+    //     async (request, reply) => {
+    //         const refreshToken = request.cookies["refresh"];
+    //         if (refreshToken == null) {
+    //             throw new UnauthorizedError("Refresh token missing");
+    //         }
 
-            await authServices.logout(
-                request.user,
-                refreshToken,
-                fastify.prisma,
-            );
+    //         await authServices.logout(
+    //             request.user,
+    //             refreshToken,
+    //             fastify.prisma,
+    //         );
 
-            reply.clearCookie("refreshToken", {
-                path: "/v1/auth/refresh",
-            });
+    //         reply.clearCookie("refreshToken", {
+    //             path: "/v1/auth",
+    //         });
 
-            return reply.code(200).send();
-        },
-    );
+    //         return reply.code(200).send();
+    //     },
+    // );
 
     fastify.post<{ Reply: AccessTokenSchemaType }>(
         "/refresh",
@@ -175,7 +171,7 @@ export default function routes(fastify: FastifyInstance, _options: object) {
                 httpOnly: true,
                 secure: true,
                 sameSite: "lax",
-                path: "/v1/auth/refresh",
+                path: "/v1/auth",
             });
 
             return {
