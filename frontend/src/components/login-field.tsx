@@ -1,11 +1,4 @@
-import {
-    Controller,
-    useForm,
-    useFormState,
-    type Control,
-    type FieldValues,
-    type SubmitHandler,
-} from "react-hook-form";
+import { Controller, useForm, type SubmitHandler } from "react-hook-form";
 import { Card, CardContent } from "./ui/card";
 import { useNavigate } from "@tanstack/react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,30 +21,7 @@ import {
     type RegisterSchemaType,
 } from "@/schemas/user.schema";
 import { loginToUser, registerAccount } from "@/api/user.api";
-import React from "react";
-import { cn } from "@/lib/utils";
-
-function FormRootMessage<T extends FieldValues>({
-    className,
-    control,
-    ...props
-}: React.ComponentProps<"p"> & { control: Control<T> }) {
-    const { errors } = useFormState({ control });
-    const rootError = errors.root;
-    if (!rootError) {
-        return null;
-    }
-
-    return (
-        <p
-            data-slot="form-message"
-            className={cn("text-destructive text-sm", className)}
-            {...props}
-        >
-            {rootError.message}
-        </p>
-    );
-}
+import { FormRootMessage } from "./form-root-message";
 
 function LoginForm() {
     const navigate = useNavigate({});
