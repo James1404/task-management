@@ -1,12 +1,13 @@
 import { CreateProjectDialog } from "@/components/create-project-dialog";
 import { Button } from "@/components/ui/button";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -16,11 +17,17 @@ import {
     SidebarGroup,
     SidebarHeader,
     SidebarInset,
+    SidebarMenu,
+    SidebarMenuButton,
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Spinner } from "@/components/ui/spinner";
 import { queryClient } from "@/lib/client";
+import {
+    getAccountOptions,
+    logoutAccountOptions,
+} from "@/queries/account.query";
 import {
     currentProjectOptions,
     getAllProjectsOptions,
@@ -28,7 +35,7 @@ import {
 import { loggedIn } from "@/stores/credentials";
 import {
     QueryClientProvider,
-    useQueries,
+    useMutation,
     useQuery,
 } from "@tanstack/react-query";
 import {
@@ -38,6 +45,7 @@ import {
     redirect,
     useParams,
 } from "@tanstack/react-router";
+import { CircleUserRound, EllipsisVertical, LogOut } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
     component: RouteComponent,
@@ -50,42 +58,37 @@ export const Route = createFileRoute("/dashboard")({
     },
 });
 
-function Project({
+function ProjectLink({
     id,
     name,
-    description,
 }: {
     id: string;
     name: string;
     description?: string;
 }) {
     return (
-        <Card className="">
-            <CardHeader className="">
-                <CardTitle>{name}</CardTitle>
-                <CardDescription>{description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Button variant="outline" asChild>
-                    <Link
-                        to={"/dashboard/$projectId"}
-                        params={{ projectId: id.toString() }}
-                    >
-                        Click me
-                    </Link>
-                </Button>
-            </CardContent>
-        </Card>
+        <Button asChild variant="outline">
+            <Link
+                to={"/dashboard/$projectId"}
+                params={{ projectId: id.toString() }}
+            >
+                <span>{name}</span>
+            </Link>
+        </Button>
     );
 }
 
-function Projects() {
+function SidebarProjects() {
     const { isPending, isError, error, data } = useQuery(
         getAllProjectsOptions(),
     );
 
     if (isPending) {
-        return <span>Loading...</span>;
+        return (
+            <span>
+                <Spinner />
+            </span>
+        );
     }
 
     if (isError) {
@@ -96,14 +99,38 @@ function Projects() {
         <ScrollArea>
             <div className="flex flex-col gap-2">
                 {data.map(project => (
-                    <Project key={project.id} {...project} />
+                    <ProjectLink key={project.id} {...project} />
                 ))}
             </div>
         </ScrollArea>
     );
 }
 
+function Nickname() {
+    const { data, status, error } = useQuery(getAccountOptions());
+
+    if (status === "error") {
+        return <span>Error: {error.message}</span>;
+    }
+
+    if (status === "pending") {
+        return (
+            <span>
+                <Spinner />
+            </span>
+        );
+    }
+
+    return <span className="truncate">{data.nickname}</span>;
+}
+
 function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+    const logoutMutator = useMutation(logoutAccountOptions());
+
+    const onLogout = async () => {
+        await logoutMutator.mutateAsync();
+    };
+
     return (
         <Sidebar {...props}>
             <SidebarHeader>Hello header</SidebarHeader>
@@ -115,10 +142,43 @@ function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SidebarGroup>
                 <Separator orientation="horizontal"></Separator>
                 <SidebarGroup>
-                    <Projects />
+                    <SidebarProjects />
                 </SidebarGroup>
             </SidebarContent>
-            <SidebarFooter>Sidebar FFOOooter</SidebarFooter>
+            <SidebarFooter>
+                <SidebarMenu>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <SidebarMenuButton
+                                size="lg"
+                                className="flex flex-row justify-between"
+                            >
+                                <CircleUserRound size={48} />
+                                <Nickname />
+                                <EllipsisVertical />
+                            </SidebarMenuButton>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="right">
+                            <DropdownMenuGroup>
+                                <DropdownMenuLabel>
+                                    My Account
+                                </DropdownMenuLabel>
+                                <DropdownMenuItem asChild>
+                                    <Link to="/dashboard/account">
+                                        Settings
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                    <Button onClick={onLogout}>
+                                        <LogOut />
+                                        Logout
+                                    </Button>
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </SidebarMenu>
+            </SidebarFooter>
         </Sidebar>
     );
 }
@@ -165,7 +225,7 @@ function RouteComponent() {
                         <ProjectName />
                     </header>
                     <main
-                        className="overflow-x-auto max-x-full h-full"
+                        className="overflow-x-auto max-x-full h-full max-h-full"
                         id="main-screen"
                     >
                         <Outlet />
