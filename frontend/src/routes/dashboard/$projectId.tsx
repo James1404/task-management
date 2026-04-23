@@ -3,6 +3,7 @@ import {
     Card,
     CardAction,
     CardContent,
+    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
@@ -81,6 +82,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const Route = createFileRoute("/dashboard/$projectId")({
     async loader({ params: { projectId } }) {
@@ -242,15 +245,14 @@ function Task(task: TaskSchemaType) {
         await reorderMutation.mutate({ task, order: order + 1 });
     };
 
-    const { ref, handleRef, isDragging, isDropTarget, isDragSource } =
-        useSortable<DraggableType>({
-            id,
-            index: order,
-            group: columnId,
-            type: "task",
-            accept: "task",
-            data: { task },
-        });
+    const { ref, handleRef, isDragging } = useSortable<DraggableType>({
+        id,
+        index: order,
+        group: columnId,
+        type: "task",
+        accept: "task",
+        data: { task },
+    });
 
     const className = cn(
         `flex flex-row items-center gap-2
@@ -360,8 +362,10 @@ function Column({ id, order }: ColumnSchemaType) {
         "h-full box-border border-2 border-dashed border-transparent transition-colors",
     );
 
+    const arrowClassName = cn("flex justify-center items-center");
+
     return (
-        <Card className="h-full w-125" ref={ref}>
+        <Card className="h-full w-125 max-w-[90svw]" ref={ref}>
             <CardHeader>
                 <CardTitle>
                     <Input
@@ -371,8 +375,6 @@ function Column({ id, order }: ColumnSchemaType) {
                     />
                 </CardTitle>
                 <CardAction className="flex flex-row">
-                    <span className="px-4 py-2">{order}</span>
-
                     <CreateTaskDialog columnId={id}>
                         <Plus />
                     </CreateTaskDialog>
@@ -392,22 +394,35 @@ function Column({ id, order }: ColumnSchemaType) {
                 </CardAction>
             </CardHeader>
             <CardContent className={contentClassName}>
-                <Tasks columnId={id} />
+                <ScrollArea>
+                    <Tasks columnId={id} />
+                </ScrollArea>
             </CardContent>
+            <CardFooter className="flex flex-col justify-center gap-2 h-fit">
+                <Separator />
+                <div className="w-full grid grid-cols-2 gap-2">
+                    <Button className={arrowClassName} variant="ghost">
+                        <MoveLeft />
+                    </Button>
+                    <Button className={arrowClassName} variant="ghost">
+                        <MoveRight />
+                    </Button>
+                </div>
+            </CardFooter>
         </Card>
     );
 }
 
-function CreateColumn({}: { columnId: ColumnID | undefined }) {
-    return (
-        <Button
-            variant="ghost"
-            className="size-7 h-full flex flex-col items-center justify-center space-y-2 group rounded-xl"
-        >
-            <Plus className="text-transparent group-hover:text-current transition-colors" />
-        </Button>
-    );
-}
+// function CreateColumn({}: { columnId: ColumnID | undefined }) {
+//     return (
+//         <Button
+//             variant="ghost"
+//             className="size-7 h-full flex flex-col items-center justify-center space-y-2 group rounded-xl"
+//         >
+//             <Plus className="text-transparent group-hover:text-current transition-colors" />
+//         </Button>
+//     );
+// }
 
 function Columns() {
     const { projectId } = Route.useParams();
@@ -489,10 +504,9 @@ function Columns() {
                 //     }),
                 // ]}
             >
-                <div className="h-full flex space-x-2 px-4 w-fit">
+                <div className="h-full flex space-x-2 px-4 w-fit gap-2">
                     {data.map(col => (
                         <Fragment key={col.id}>
-                            <CreateColumn columnId={col.id} />
                             <Column {...col} />
                         </Fragment>
                     ))}
@@ -502,7 +516,7 @@ function Columns() {
     );
 }
 
-function CurrentProject() {
+function RouteComponent() {
     const { projectId } = Route.useParams();
     const { status, error } = useQuery(currentProjectOptions(projectId));
 
@@ -519,10 +533,6 @@ function CurrentProject() {
             <Columns />
         </div>
     );
-}
-
-function RouteComponent() {
-    return <CurrentProject />;
 }
 
 function NotFoundComponent() {
