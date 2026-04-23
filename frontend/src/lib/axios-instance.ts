@@ -4,28 +4,25 @@ import {
     getAuthorizationHeader,
     setAccess,
 } from "@/stores/credentials";
-import Axios, {
-    type AxiosRequestConfig,
-    AxiosError,
-    isAxiosError,
-} from "axios";
+import Axios, { type AxiosRequestConfig, AxiosError } from "axios";
 import { createAuthRefresh } from "axios-auth-refresh";
 
-export const AXIOS_INSTANCE = Axios.create({
-    baseURL: "http://localhost:3000",
-});
+const axios_params = {
+    baseURL: import.meta.env.BACKEND_URL,
+};
 
-const NON_AUTH_AXIOS_INSTANCE = AXIOS_INSTANCE.create();
+export const AXIOS_INSTANCE = Axios.create(axios_params);
+const NON_AUTH_AXIOS_INSTANCE = Axios.create(axios_params);
+const REFRESH_AXIOS_INSTANCE = Axios.create(axios_params);
 
 AXIOS_INSTANCE.interceptors.request.use(request => {
     request.headers.Authorization = getAuthorizationHeader();
-
     return request;
 });
 
 createAuthRefresh(AXIOS_INSTANCE, async failedRequest => {
     try {
-        const response = await NON_AUTH_AXIOS_INSTANCE.post(
+        const response = await REFRESH_AXIOS_INSTANCE.post(
             "/v1/auth/refresh",
             {},
             {
@@ -40,79 +37,27 @@ createAuthRefresh(AXIOS_INSTANCE, async failedRequest => {
             getAuthorizationHeader();
 
         return Promise.resolve();
-    } catch (err) {
-        clearAccess();
-        router.navigate({ to: "/" });
-
-        return Promise.reject();
+    } catch (error) {
+        return Promise.reject(error);
     }
 });
 
-// async function refresh() {
-//     try {
-//         const response = await NON_AUTH_AXIOS_INSTANCE.post(
-//             "/v1/auth/refresh",
-//             {},
-//             {
-//                 headers: { Authorization: getAuthorizationHeader() },
-//                 withCredentials: true,
-//             },
-//         );
+createAuthRefresh(REFRESH_AXIOS_INSTANCE, async () => {
+    try {
+        clearAccess();
+        router.navigate({ to: "/" });
 
-//         setAccess(response.data.access);
-//     } catch (err) {
-//         console.log(err as Error);
-
-//         clearAccess();
-//         router.navigate({ to: "/" });
-
-//         // if (error || !data) {
-//         //     return response;
-//         // }
-//     }
-// }
+        return Promise.resolve();
+    } catch (error) {
+        return Promise.reject(error);
+    }
+});
 
 const NonAuthPaths: string[] = [
     "/v1/auth/refresh",
     "/v1/auth/login",
     "/v1/auth/register",
 ];
-
-// // Request interceptor for auth
-// AXIOS_INSTANCE.interceptors.request.use(
-//     request => {
-//         if (!NonAuthPaths.includes(request?.url ?? "")) {
-//             request.headers.Authorization = getAuthorizationHeader();
-//         }
-
-//         return request;
-//     },
-//     error => Promise.reject(error),
-// );
-
-// // Response interceptor for error handling
-// AXIOS_INSTANCE.interceptors.response.use(
-//     response => response,
-//     async error => {
-//         if (isAxiosError(error)) {
-//             const originalRequest = error.request;
-
-//             console.log(error.config?.url);
-
-//             if (
-//                 error.response?.status === 401 &&
-//                 !NonAuthPaths.includes(error.config?.url ?? "")
-//             ) {
-//                 await refresh();
-//                 originalRequest.headers.Authorization =
-//                     getAuthorizationHeader();
-//                 return AXIOS_INSTANCE(originalRequest);
-//             }
-//         }
-
-//         return Promise.reject(error);
-//     },
-// );
 
 export const customInstance = <T>(
     config: AxiosRequestConfig,
