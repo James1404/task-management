@@ -1,9 +1,12 @@
 # TODO
 
-- [ ] Add sorting of columns and tasks
+- [X] Add sorting of columns and tasks
 - [X] Smooth out moving of tasks between columns
-- [ ] Fix refresh issues (will need to fix on backend first)
+- [X] Fix refresh issues (will need to fix on backend first)
 - [X] Add 404 page for non-existent projects
+- [] Add home page
+- [] Add logout button
+- [] Fix tanstack query key's to include dependency on users and projects.
 
 ## Potential ideas
 

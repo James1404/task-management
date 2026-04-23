@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 .tanstack/tmp
+
+.env
+!.env.example

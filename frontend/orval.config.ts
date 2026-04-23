@@ -1,4 +1,7 @@
 import { defineConfig } from "orval";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export default defineConfig({
     backend: {
@@ -15,7 +18,7 @@ export default defineConfig({
             },
         },
         input: {
-            target: "http://localhost:3000/docs/json",
+            target: `${process.env.BACKEND_URL}/docs/json`,
         },
     },
 });
