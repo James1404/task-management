@@ -110,7 +110,10 @@ export function reorderTaskOptions() {
                 ["columns", variables.task.columnId, "tasks"],
                 (old: any[]) => {
                     const newTasks = [...old];
-                    const [removed] = newTasks.splice(variables.task.order, 1);
+                    const [removed] = newTasks.splice(
+                        Math.max(variables.task.order, 0),
+                        1,
+                    );
                     newTasks.splice(variables.order, 0, removed);
                     return newTasks;
                 },

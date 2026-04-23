@@ -16,20 +16,6 @@ import {
     queryOptions,
     useQueryClient,
 } from "@tanstack/react-query";
-import { createQueryKeys } from "@lukemorales/query-key-factory";
-
-const queries = createQueryKeys("columns", {
-    all: ["columns"],
-    detail: (columnId: ColumnID) => ({
-        queryKey: [columnId],
-        contextQueries: {
-            tasks: {},
-        },
-    }),
-    list: () => ({
-        queryKey: [""],
-    }),
-});
 
 export function getAllColumnsOptions(projectId: ProjectID) {
     return queryOptions({
@@ -66,7 +52,7 @@ export function reorderColumnsOptions() {
             columnId: ColumnID;
             order: OrderType;
         }) => await reorderColumn(columnId, order),
-        onSettled: async (_data, _error, variables) => {
+        onSettled: async (_data, _error) => {
             await queryClient.invalidateQueries({
                 queryKey: ["columns"],
             });
