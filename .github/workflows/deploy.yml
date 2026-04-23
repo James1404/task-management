@@ -9,7 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        shell: bash
         working-directory: ./frontend
     steps:
       - name: Checkout repo
