@@ -6,20 +6,7 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type PostV1AuthRegisterBody = {
-  /** @maxLength 255 */
-  email: string;
-  /**
-   * @minLength 8
-   * @maxLength 64
-   */
-  password: string;
-  /**
-   * @minLength 8
-   * @maxLength 64
-   */
-  confirm_password: string;
-} & {
+export type GetV1Account200 = {
   /** @maxLength 255 */
   email: string;
   /**
@@ -27,4 +14,7 @@ export type PostV1AuthRegisterBody = {
    * @maxLength 30
    */
   nickname: string;
-};
+} & ({
+  id: string;
+  role: 'USER' | 'ADMIN';
+});
