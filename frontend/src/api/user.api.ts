@@ -2,7 +2,7 @@ import type {
     LoginSchemaType,
     RegisterSchemaType,
 } from "@/schemas/user.schema";
-import { clearAccess, setAccess } from "@/stores/credentials";
+import { setAccess } from "@/stores/credentials";
 import { getTaskManagementAPI } from "../../generated/backend";
 import { isAxiosError } from "axios";
 
@@ -20,20 +20,22 @@ export async function loginToUser(body: LoginSchemaType) {
 
         throw err;
     }
-    // const { data, error } = await client.POST("/v1/auth/login", {
-    //     body: {
-    //         ...schema,
-    //     },
-    //     credentials: "include",
-    // });
+}
 
-    // if (error) {
-    //     throw new Error(error.error);
-    // }
+export async function getAccount() {
+    try {
+        const data = await getTaskManagementAPI().getV1Account({
+            withCredentials: true,
+        });
 
-    // if (!data) {
-    //     throw new Error("Failed to load into user");
-    // }
+        return data;
+    } catch (err) {
+        if (isAxiosError(err)) {
+            throw new Error("Failed to get user data");
+        }
+
+        throw err;
+    }
 }
 
 export async function registerAccount(body: RegisterSchemaType) {
@@ -42,32 +44,11 @@ export async function registerAccount(body: RegisterSchemaType) {
         { withCredentials: true },
     );
 
-    // const { data, error } = await client.POST("/v1/auth/register", {
-    //     body: schema,
-    //     credentials: "include",
-    // });
-
-    // if (error) {
-    //     throw new Error(error.error);
-    // }
-
-    // if (!data) {
-    //     throw new Error("Failed to load into user");
-    // }
-
     setAccess(data.access);
 }
 
-export async function logout() {
-    const data = await getTaskManagementAPI().postV1AuthLogout({
+export async function logoutAccount() {
+    await getTaskManagementAPI().postV1AuthLogout({
         withCredentials: true,
     });
-
-    // const { error } = await client.POST("/v1/auth/logout", {
-    //     credentials: "same-origin",
-    // });
-
-    // console.log(`Logout error: ${error}`);
-
-    clearAccess();
 }
