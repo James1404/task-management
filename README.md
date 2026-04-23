@@ -3,61 +3,58 @@
 A simple full-stack task management application with JWT authentication.  
 Users can register, log in, create projects, and manage tasks.
 
----
-
 ## Tech Stack
 
-### Backend
+- Backend: Deno, Fastify, Prisma, TypeBox, PostgreSQL
+- Frontend: React, Vite, TanStack Router, TanStack Query, Orval, Axios
 
-- Deno
-- Express
-- TypeScript
-- Prisma
-- PostgreSQL
-- JWT (access + refresh tokens)
+### Features
 
-### Frontend
-
-- Node.js
-- React
-- TypeScript
-- Vite
-- Axios
-
----
+- User authentication with refresh token rotation
+- Project-based task organization
+- Drag-and-drop task management between columns
+- Optimistic UI updates
+- RESTful API with schema validation
 
 ## Getting Started
 
-### 1. Clone the repo
+### Backend
+
+#### 1. Clone the repo
 
 ```bash
 git clone https://github.com/james1404/task-management.git
 cd yourrepo
 ```
 
-### 2. Install backend
+#### 2. Install backend
 
 ```bash
 cd backend
 npm install
 ```
 
-### 3. Setup .env
+#### 3. Setup .env
 
 ```bash
 cp .env.example .env
 # Then update it to your settings
 ```
 
-### 4. Setup prisma
+#### 4. Setup prisma
 
 ```bash
 npx prisma migrate dev
 npx prisma generate
 ```
 
-### 5. Setup prisma
+#### 5. Setup prisma
 
 ```bash
 npm run dev
 ```
+
+
+### Frontend
+
+#### 1. Clone the repo
