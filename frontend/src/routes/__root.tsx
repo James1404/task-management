@@ -10,7 +10,7 @@ function RootLayout() {
             <TooltipProvider>
                 <Outlet />
                 <Toaster />
-                <TanStackRouterDevtools />
+                <TanStackRouterDevtools position="bottom-right" />
             </TooltipProvider>
         </ThemeProvider>
     );
